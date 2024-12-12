@@ -1,14 +1,21 @@
 import { AppNavbar } from '@/components/app-navbar';
+import { hc } from '@/lib/clients';
+import { queryOptions } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+
+const userQuery = queryOptions({
+  queryKey: ['user'],
+  queryFn: () => hc['user'].$get().then((r) => r.json()),
+});
 
 export const Route = createFileRoute('/_authed')({
   component: () => <MainLayout />,
-  beforeLoad: async ({ context: { hc, userId } }) => {
+  beforeLoad: async ({ context: { queryClient, userId } }) => {
     if (!userId) {
       console.log('redirecting to signin', userId);
       throw redirect({ to: '/sign-in/$' });
     }
-    return await hc.user.$get().then((r) => r.json());
+    return await queryClient.ensureQueryData(userQuery);
   },
 });
 

@@ -28,6 +28,7 @@ export const Route = createFileRoute('/_authed/config')({
     queryClient.ensureQueryData(productsQuery);
     queryClient.ensureQueryData(configsQuery);
   },
+  preload: true,
 });
 
 function ConfigComponent() {

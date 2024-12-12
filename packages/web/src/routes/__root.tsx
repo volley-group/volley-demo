@@ -1,5 +1,7 @@
 import { Toaster } from '@/components/ui/sonner';
+import { hc } from '@/lib/clients';
 import { RouterContext } from '@/lib/router';
+import { queryOptions } from '@tanstack/react-query';
 import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import React from 'react';
 import { Suspense } from 'react';
@@ -23,10 +25,14 @@ const RootComponent = () => (
   </div>
 );
 
+const userIdQuery = queryOptions({
+  queryKey: ['userId'],
+  queryFn: () => hc['userId'].$get().then((r) => r.json()),
+});
+
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootComponent,
-  beforeLoad: async ({ context: { hc } }) => {
-    const { userId } = await hc.userId.$get().then((r) => r.json());
-    return { userId };
+  beforeLoad: async ({ context: { queryClient } }) => {
+    return await queryClient.ensureQueryData(userIdQuery);
   },
 });

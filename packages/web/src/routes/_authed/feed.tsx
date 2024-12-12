@@ -11,12 +11,6 @@ import { hc } from '@/lib/clients';
 import { useQuery, queryOptions } from '@tanstack/react-query';
 import { MessageFeed } from '@/components/messages/message-feed';
 
-interface ServiceWithContext {
-  name: string;
-  product: string;
-  displayName: string; // Format: "Product - Service"
-}
-
 const messagesQuery = queryOptions({
   queryKey: ['messages'],
   queryFn: () => hc['status-messages'].$get().then((r) => r.json()),
@@ -33,6 +27,7 @@ export const Route = createFileRoute('/_authed/feed')({
     queryClient.ensureQueryData(messagesQuery);
     queryClient.ensureQueryData(productsQuery);
   },
+  preload: true,
 });
 
 function FeedComponent() {
