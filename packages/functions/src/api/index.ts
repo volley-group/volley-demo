@@ -5,12 +5,14 @@ import { trpcServer } from '@hono/trpc-server';
 import { createContext, router } from './trpc';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { slack } from '../slack';
+import { scopes, slack, userScopes } from '../slack';
 import { Resource } from 'sst';
 import { db } from '../drizzle';
-import { SlackInstallationTable, UserTable } from '../drizzle/schema.sql';
+import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } from '../drizzle/schema.sql';
 import { authenticatedMiddleware, clerkMiddleware } from './middleware';
 import { eq, getTableColumns } from 'drizzle-orm';
+import { getFeeds } from '../feeds';
+import type { IService } from '../types';
 
 const api = new Hono()
   .get('/ping', async (c) => {
@@ -24,6 +26,7 @@ const api = new Hono()
       const { code } = c.req.valid('query');
       console.log(code);
       console.log(new URL(c.req.url).origin);
+      console.log(Resource.Config.PERMANENT_STAGE)
       const response = await slack.oauth.v2.access({
         code: code,
         client_id: Resource.SlackClientId.value,
@@ -46,10 +49,15 @@ const api = new Hono()
             url: response.incoming_webhook!.url!,
           },
         })
-        .onConflictDoNothing()
+        .onConflictDoUpdate({ // We need to do an update here to make returning() actually return something
+          target: [SlackInstallationTable.teamId],
+          set: {
+            teamName: response.team!.name!,
+          },
+        })
         .returning();
       console.log('Saved new installation', installation.id);
-      const redirectUrl = Resource.Config.PERMANENT_STAGE ? 'http://localhost:5173/feed' : '/feed';
+      const redirectUrl = Resource.Config.PERMANENT_STAGE ? '/feed' : 'http://localhost:5173/feed';
       return c.redirect(redirectUrl);
     }
   )
@@ -57,16 +65,111 @@ const api = new Hono()
     const requestState = c.get('requestState');
     return c.json({ userId: requestState.status === 'signed-in' ? requestState.toAuth().userId : null }, 200);
   })
+  .get('/installation-url', async (c) => {
+    const params = new URLSearchParams({
+      client_id: Resource.SlackClientId.value,
+      scope: scopes.join(','),
+      user_scope: userScopes.join(','),
+      redirect_uri:
+        'https://b4bd5w7k5n3jqfd4cxqxvpyhum0jyojq.lambda-url.us-east-1.on.aws/api/auth/slack/oauth_redirect',
+    });
+
+    return c.json(`https://slack.com/oauth/v2/authorize?${params.toString()}`);
+  })
   .use(authenticatedMiddleware())
+  .get('/handle-sign-in', async (c) => {
+    const { userId } = c.get('auth');
+    const clerk = c.get('clerk');
+    const accessTokens = (await clerk.users.getUserOauthAccessToken(userId!, 'oauth_slack')).data;
+    console.log(accessTokens);
+    const token = accessTokens[0].token || '';
+    const userInfo = await slack.openid.connect.userInfo({
+      token,
+    });
+    console.log(userInfo);
+    const [savedUser] = await db
+      .insert(UserTable)
+      .values({
+        id: userId!,
+        externalId: userInfo['https://slack.com/user_id']!,
+        email: userInfo.email!,
+        name: userInfo.name!,
+        avatarUrl: userInfo.picture,
+        teamId: userInfo['https://slack.com/team_id']!,
+      })
+      .onConflictDoUpdate({ // We need to do an update here to make returning() actually return something. Sad but true
+        target: [UserTable.id],
+        set: {
+          teamId: userInfo['https://slack.com/team_id']!,
+        },
+      })
+      .returning();
+    console.log(savedUser);
+
+    const [existingInstallation] = await db
+      .select({
+        id: SlackInstallationTable.id,
+      })
+      .from(SlackInstallationTable)
+      .where(eq(SlackInstallationTable.teamId, savedUser.teamId));
+
+    if (!existingInstallation) {
+      console.log('No installation found, redirecting to install');
+      return c.json({ to: '/slack/install' }, 200);
+    }
+
+    return c.json({ to: '/feed' }, 200);
+  })
   .get('/user', async (c) => {
     const userId = c.get('auth').userId;
-    const [userWithInstallation] = await db
-      .select({ ...getTableColumns(UserTable), installationId: SlackInstallationTable.id })
-      .from(UserTable)
-      .innerJoin(SlackInstallationTable, eq(UserTable.teamId, SlackInstallationTable.teamId))
-      .where(eq(UserTable.id, userId));
+    console.log(userId);
+    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+    console.log(user);
+    const [installation] = await db
+      .select({ id: SlackInstallationTable.id })
+      .from(SlackInstallationTable)
+      .where(eq(SlackInstallationTable.teamId, user.teamId));
 
-    return c.json({ user: userWithInstallation });
+    return c.json({ ...user, installationId: installation.id });
+  })
+  .get('/status-messages', async (c) => {
+    const { userId } = c.get('auth');
+    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+    const messages = await db
+      .select({
+        ...getTableColumns(StatusMessageTable),
+      })
+      .from(StatusMessageTable)
+      .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
+      .where(eq(SlackInstallationTable.teamId, user.teamId));
+    return c.json({ teamId: user.teamId, messages }, 200);
+  })
+  .get('/get-feed-and-configs', async (c) => {
+    const { userId } = c.get('auth');
+    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+    const teamConfigs = await db
+      .select({ ...getTableColumns(ConfigTable), teamId: SlackInstallationTable.teamId })
+      .from(ConfigTable)
+      .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
+      .where(eq(SlackInstallationTable.teamId, user.teamId));
+    const products = await getFeeds();
+    const services = await products.reduce(
+      async (acc, product) => {
+        const services = await product.getServices();
+        return {
+          ...(await acc),
+          [product.name]: services,
+        };
+      },
+      Promise.resolve({} as Record<string, IService[]>)
+    );
+    const productsWithServices = products.map((product) => ({
+      name: product.name,
+      displayName: product.displayName,
+      logo: product.logo,
+      services: services[product.name],
+    }));
+    return c.json({ products: productsWithServices, teamConfigs }, 200);
   });
 
 const routes = new Hono()

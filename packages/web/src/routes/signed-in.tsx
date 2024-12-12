@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 
 // const userInfo = createServerFn({ method: "GET" }).handler(async () => {
 //   const { userId } = await getAuth(getWebRequest());
@@ -43,6 +44,20 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 //   throw redirect({ to: "/feed" });
 // });
 
-export const Route = createFileRoute('/_authed/signed-in')({
-  loader: async ({ context: { trpc } }) => await trpc.handleSignIn.query().then(({ to }) => redirect({ to })),
-});
+export const Route = createFileRoute('/signed-in')({
+  component: Component,
+})
+
+function Component() {
+  const { hc } = Route.useRouteContext()
+  const navigate = useNavigate()
+  useEffect(() => {
+    hc['handle-sign-in']
+      .$get()
+      .then((r) => r.json())
+      .then(({ to }) => {
+        console.log(to);
+        navigate({ to });
+      });
+  }, []);
+}

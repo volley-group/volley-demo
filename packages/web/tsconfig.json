@@ -7,8 +7,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["packages/web/src/*"],
-      "@braid/server/*": ["packages/server/src/*"]
+      "@/*": ["./src/*"],
+      "@braid/functions/*": ["../functions/src/*"]
     }
   }
 }

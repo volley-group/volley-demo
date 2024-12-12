@@ -11,16 +11,22 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SignedInImport } from './routes/signed-in'
 import { Route as SignOutImport } from './routes/sign-out'
 import { Route as AuthedImport } from './routes/_authed'
 import { Route as SlackInstallImport } from './routes/slack.install'
 import { Route as SignUpSplatImport } from './routes/sign-up.$'
 import { Route as SignInSplatImport } from './routes/sign-in.$'
-import { Route as AuthedSignedInImport } from './routes/_authed/signed-in'
 import { Route as AuthedFeedImport } from './routes/_authed/feed'
 import { Route as AuthedConfigImport } from './routes/_authed/config'
 
 // Create/Update Routes
+
+const SignedInRoute = SignedInImport.update({
+  id: '/signed-in',
+  path: '/signed-in',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const SignOutRoute = SignOutImport.update({
   id: '/sign-out',
@@ -49,12 +55,6 @@ const SignInSplatRoute = SignInSplatImport.update({
   id: '/sign-in/$',
   path: '/sign-in/$',
   getParentRoute: () => rootRoute,
-} as any)
-
-const AuthedSignedInRoute = AuthedSignedInImport.update({
-  id: '/signed-in',
-  path: '/signed-in',
-  getParentRoute: () => AuthedRoute,
 } as any)
 
 const AuthedFeedRoute = AuthedFeedImport.update({
@@ -87,6 +87,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignOutImport
       parentRoute: typeof rootRoute
     }
+    '/signed-in': {
+      id: '/signed-in'
+      path: '/signed-in'
+      fullPath: '/signed-in'
+      preLoaderRoute: typeof SignedInImport
+      parentRoute: typeof rootRoute
+    }
     '/_authed/config': {
       id: '/_authed/config'
       path: '/config'
@@ -99,13 +106,6 @@ declare module '@tanstack/react-router' {
       path: '/feed'
       fullPath: '/feed'
       preLoaderRoute: typeof AuthedFeedImport
-      parentRoute: typeof AuthedImport
-    }
-    '/_authed/signed-in': {
-      id: '/_authed/signed-in'
-      path: '/signed-in'
-      fullPath: '/signed-in'
-      preLoaderRoute: typeof AuthedSignedInImport
       parentRoute: typeof AuthedImport
     }
     '/sign-in/$': {
@@ -137,13 +137,11 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedConfigRoute: typeof AuthedConfigRoute
   AuthedFeedRoute: typeof AuthedFeedRoute
-  AuthedSignedInRoute: typeof AuthedSignedInRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConfigRoute: AuthedConfigRoute,
   AuthedFeedRoute: AuthedFeedRoute,
-  AuthedSignedInRoute: AuthedSignedInRoute,
 }
 
 const AuthedRouteWithChildren =
@@ -152,9 +150,9 @@ const AuthedRouteWithChildren =
 export interface FileRoutesByFullPath {
   '': typeof AuthedRouteWithChildren
   '/sign-out': typeof SignOutRoute
+  '/signed-in': typeof SignedInRoute
   '/config': typeof AuthedConfigRoute
   '/feed': typeof AuthedFeedRoute
-  '/signed-in': typeof AuthedSignedInRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/slack/install': typeof SlackInstallRoute
@@ -163,9 +161,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '': typeof AuthedRouteWithChildren
   '/sign-out': typeof SignOutRoute
+  '/signed-in': typeof SignedInRoute
   '/config': typeof AuthedConfigRoute
   '/feed': typeof AuthedFeedRoute
-  '/signed-in': typeof AuthedSignedInRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/slack/install': typeof SlackInstallRoute
@@ -175,9 +173,9 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/sign-out': typeof SignOutRoute
+  '/signed-in': typeof SignedInRoute
   '/_authed/config': typeof AuthedConfigRoute
   '/_authed/feed': typeof AuthedFeedRoute
-  '/_authed/signed-in': typeof AuthedSignedInRoute
   '/sign-in/$': typeof SignInSplatRoute
   '/sign-up/$': typeof SignUpSplatRoute
   '/slack/install': typeof SlackInstallRoute
@@ -188,9 +186,9 @@ export interface FileRouteTypes {
   fullPaths:
     | ''
     | '/sign-out'
+    | '/signed-in'
     | '/config'
     | '/feed'
-    | '/signed-in'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/slack/install'
@@ -198,9 +196,9 @@ export interface FileRouteTypes {
   to:
     | ''
     | '/sign-out'
+    | '/signed-in'
     | '/config'
     | '/feed'
-    | '/signed-in'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/slack/install'
@@ -208,9 +206,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/sign-out'
+    | '/signed-in'
     | '/_authed/config'
     | '/_authed/feed'
-    | '/_authed/signed-in'
     | '/sign-in/$'
     | '/sign-up/$'
     | '/slack/install'
@@ -220,6 +218,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   SignOutRoute: typeof SignOutRoute
+  SignedInRoute: typeof SignedInRoute
   SignInSplatRoute: typeof SignInSplatRoute
   SignUpSplatRoute: typeof SignUpSplatRoute
   SlackInstallRoute: typeof SlackInstallRoute
@@ -228,6 +227,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   SignOutRoute: SignOutRoute,
+  SignedInRoute: SignedInRoute,
   SignInSplatRoute: SignInSplatRoute,
   SignUpSplatRoute: SignUpSplatRoute,
   SlackInstallRoute: SlackInstallRoute,
@@ -245,6 +245,7 @@ export const routeTree = rootRoute
       "children": [
         "/_authed",
         "/sign-out",
+        "/signed-in",
         "/sign-in/$",
         "/sign-up/$",
         "/slack/install"
@@ -254,12 +255,14 @@ export const routeTree = rootRoute
       "filePath": "_authed.tsx",
       "children": [
         "/_authed/config",
-        "/_authed/feed",
-        "/_authed/signed-in"
+        "/_authed/feed"
       ]
     },
     "/sign-out": {
       "filePath": "sign-out.tsx"
+    },
+    "/signed-in": {
+      "filePath": "signed-in.tsx"
     },
     "/_authed/config": {
       "filePath": "_authed/config.tsx",
@@ -267,10 +270,6 @@ export const routeTree = rootRoute
     },
     "/_authed/feed": {
       "filePath": "_authed/feed.tsx",
-      "parent": "/_authed"
-    },
-    "/_authed/signed-in": {
-      "filePath": "_authed/signed-in.tsx",
       "parent": "/_authed"
     },
     "/sign-in/$": {

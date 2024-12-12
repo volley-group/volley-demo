@@ -17,7 +17,7 @@ interface ServiceWithContext {
 
 export const Route = createFileRoute('/_authed/feed')({
   component: FeedComponent,
-  loader: async ({ context: { trpc } }) => await trpc.getStatusMessages.query(),
+  loader: async ({ context: { hc } }) => await hc['status-messages'].$get().then(r => r.json()),
 });
 
 function FeedComponent() {
