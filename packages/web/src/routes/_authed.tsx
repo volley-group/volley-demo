@@ -8,9 +8,15 @@ const userQuery = queryOptions({
   queryFn: () => hc['user'].$get().then((r) => r.json()),
 });
 
+const userIdQuery = queryOptions({
+  queryKey: ['userId'],
+  queryFn: () => hc['userId'].$get().then((r) => r.json()),
+});
+
 export const Route = createFileRoute('/_authed')({
   component: () => <MainLayout />,
-  beforeLoad: async ({ context: { queryClient, userId } }) => {
+  loader: async ({ context: { queryClient } }) => {
+    const { userId } = await queryClient.fetchQuery(userIdQuery);
     if (!userId) {
       console.log('redirecting to signin', userId);
       throw redirect({ to: '/sign-in/$' });

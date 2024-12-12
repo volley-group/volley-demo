@@ -5,6 +5,6 @@ export const Route = createFileRoute('/sign-out')({
   preload: false,
   component: () => {
     const { signOut } = useAuth();
-    signOut();
+    signOut({ redirectUrl: '/sign-in' });
   },
 });
