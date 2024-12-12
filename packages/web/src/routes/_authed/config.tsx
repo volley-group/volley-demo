@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { rtrpc } from '@/lib/clients';
 
 // const feeds = createServerFn({ method: "GET" })
 //   .validator(z.object({ teamId: z.string() }))
@@ -95,13 +94,15 @@ import { rtrpc } from '@/lib/clients';
 
 export const Route = createFileRoute('/_authed/config')({
   component: ConfigComponent,
-  loader: ({ context }) => ({ teamId: context.teamId }),
+  loader: async ({ context: { hc } }) => {
+    return await hc['get-feed-and-configs'].$get().then((r) => r.json());
+  },
 });
 
 function ConfigComponent() {
   // const { products, teamConfigs } = Route.useLoaderData();
-  const { teamId } = Route.useLoaderData();
-  const configQuery = rtrpc.getFeedsAndConfigs.useQuery({ teamId });
+  const {products, teamConfigs} = Route.useLoaderData();
+  const { hc } = Route.useRouteContext();
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [enabledServices, setEnabledServices] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -159,7 +160,6 @@ function ConfigComponent() {
     return <Cloud className="h-5 w-5" />;
   };
 
-  const products = useMemo(() => configQuery.data?.products || [], [configQuery.data]);
   const filteredProducts = useMemo(
     () =>
       products.filter(

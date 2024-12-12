@@ -1,3 +1,4 @@
+import { AppNavbar } from '@/components/app-navbar';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_authed')({
@@ -14,7 +15,7 @@ export const Route = createFileRoute('/_authed')({
 export const MainLayout = () => {
   return (
     <div className="flex min-h-svh">
-      {/* <AppNavbar /> */}
+      <AppNavbar />
       <div className="flex flex-1 flex-col pt-16">
         <div className="flex flex-1 flex-col gap-4 p-4">
           <Outlet />

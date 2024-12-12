@@ -9,7 +9,7 @@ import { scopes, userScopes } from '../slack';
 import { slack } from '../slack';
 import { getTableColumns } from 'drizzle-orm';
 import { z } from 'zod';
-import { getFeeds } from '../feeds';
+import feeds from '../feeds';
 import type { IService } from '../types';
 import { Resource } from 'sst';
 import type { SignedInAuthObject } from '@clerk/backend/internal';
@@ -115,8 +115,7 @@ export const router = t.router({
       .from(ConfigTable)
       .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
       .where(eq(SlackInstallationTable.teamId, input.teamId));
-    const products = await getFeeds();
-    const services = await products.reduce(
+    const services = await feeds.reduce(
       async (acc, product) => {
         const services = await product.getServices();
         return {
@@ -126,7 +125,7 @@ export const router = t.router({
       },
       Promise.resolve({} as Record<string, IService[]>)
     );
-    const productsWithServices = products.map((product) => ({
+    const productsWithServices = feeds.map((product) => ({
       name: product.name,
       displayName: product.displayName,
       logo: product.logo,

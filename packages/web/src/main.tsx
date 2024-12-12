@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from '@tanstack/react-router';
-import './index.css';
+import './app.css';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -28,9 +28,9 @@ if (!rootElement.innerHTML) {
           publishableKey={CLERK_KEY}
           routerReplace={(to: string) => router.navigate({ to, replace: true })}
           routerPush={(to: string) => router.navigate({ to, replace: false })}
-          afterSignOutUrl="/signin"
-          signInUrl="/signin"
-          signUpUrl="/signup"
+          afterSignOutUrl="/sign-in"
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
         >
           <App />
         </ClerkProvider>

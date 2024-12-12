@@ -112,7 +112,7 @@ export default $config({
 
     new sst.x.DevCommand('Compose', {
       dev: {
-        command: 'docker compose up -f packages/functions/compose.yml',
+        command: 'docker compose -f ./packages/functions/compose.yml up',
         autostart: true,
       },
     });

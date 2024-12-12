@@ -11,7 +11,7 @@ import { db } from '../drizzle';
 import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } from '../drizzle/schema.sql';
 import { authenticatedMiddleware, clerkMiddleware } from './middleware';
 import { eq, getTableColumns, inArray } from 'drizzle-orm';
-import { getFeeds } from '../feeds';
+import feeds from '../feeds';
 import type { IService } from '../types';
 
 const api = new Hono()
@@ -148,7 +148,7 @@ const api = new Hono()
       })
       .from(StatusMessageTable)
       .where(inArray(StatusMessageTable.product, team!.configs.map((c) => c.product)));
-      
+
     return c.json({ teamId: user.teamId, messages }, 200);
   })
   .get('/get-feed-and-configs', async (c) => {
@@ -159,8 +159,7 @@ const api = new Hono()
       .from(ConfigTable)
       .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
       .where(eq(SlackInstallationTable.teamId, user.teamId));
-    const products = await getFeeds();
-    const services = await products.reduce(
+    const services = await feeds.reduce(
       async (acc, product) => {
         const services = await product.getServices();
         return {
@@ -170,7 +169,7 @@ const api = new Hono()
       },
       Promise.resolve({} as Record<string, IService[]>)
     );
-    const productsWithServices = products.map((product) => ({
+    const productsWithServices = feeds.map((product) => ({
       name: product.name,
       displayName: product.displayName,
       logo: product.logo,
