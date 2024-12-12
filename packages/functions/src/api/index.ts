@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
 import { trimTrailingSlash } from 'hono/trailing-slash';
-import { trpcServer } from '@hono/trpc-server';
-import { createContext, router } from './trpc';
+// import { trpcServer } from '@hono/trpc-server';
+// import { createContext, router } from './trpc';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { scopes, slack, userScopes } from '../slack';
@@ -26,7 +26,7 @@ const api = new Hono()
       const { code } = c.req.valid('query');
       console.log(code);
       console.log(new URL(c.req.url).origin);
-      console.log(Resource.Config.PERMANENT_STAGE)
+      console.log(Resource.Config.PERMANENT_STAGE);
       const response = await slack.oauth.v2.access({
         code: code,
         client_id: Resource.SlackClientId.value,
@@ -49,7 +49,8 @@ const api = new Hono()
             url: response.incoming_webhook!.url!,
           },
         })
-        .onConflictDoUpdate({ // We need to do an update here to make returning() actually return something
+        .onConflictDoUpdate({
+          // We need to do an update here to make returning() actually return something
           target: [SlackInstallationTable.teamId],
           set: {
             teamName: response.team!.name!,
@@ -97,7 +98,8 @@ const api = new Hono()
         avatarUrl: userInfo.picture,
         teamId: userInfo['https://slack.com/team_id']!,
       })
-      .onConflictDoUpdate({ // We need to do an update here to make returning() actually return something. Sad but true
+      .onConflictDoUpdate({
+        // We need to do an update here to make returning() actually return something. Sad but true
         target: [UserTable.id],
         set: {
           teamId: userInfo['https://slack.com/team_id']!,
@@ -147,7 +149,12 @@ const api = new Hono()
         ...getTableColumns(StatusMessageTable),
       })
       .from(StatusMessageTable)
-      .where(inArray(StatusMessageTable.product, team!.configs.map((c) => c.product)));
+      .where(
+        inArray(
+          StatusMessageTable.product,
+          team!.configs.map((c) => c.product)
+        )
+      );
 
     return c.json({ teamId: user.teamId, messages }, 200);
   })
@@ -190,15 +197,15 @@ const routes = new Hono()
   .get('/ping', async (c) => {
     console.log('ping');
     return c.body('pong');
-  })
-  .use(
-    '/trpc/*',
-    trpcServer({
-      router,
-      createContext,
-    })
-  );
+  });
+// .use(
+//   '/trpc/*',
+//   trpcServer({
+//     router,
+//     createContext,
+//   })
+// );
 
 export type ApiRoutes = typeof api;
-export type TrpcRoutes = typeof router;
+// export type TrpcRoutes = typeof router;
 export const handler = handle(routes);

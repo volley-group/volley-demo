@@ -80,13 +80,13 @@ export default $config({
       },
     });
 
-    // const runner = new sst.aws.Cron("StatusRunner", {
-    //   job: {
-    //     handler: "app/functions/run.ts",
-    //     link: [database, slackClientId, slackClientSecret, slackSigningSecret],
-    //   },
-    //   schedule: "rate(1 minute)",
-    // });
+    new sst.aws.Cron('StatusRunner', {
+      job: {
+        handler: 'packages/functions/src/run.ts',
+        link: [database, slackClientId, slackClientSecret, slackSigningSecret],
+      },
+      schedule: 'rate(1 minute)',
+    });
 
     if ($app.stage === 'production') {
       const databasePush = new sst.aws.Function(`DatabasePush`, {
