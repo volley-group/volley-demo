@@ -26,6 +26,7 @@ export default $config({
     const slackSigningSecret = new sst.Secret(`SlackSigningSecret`);
     const clerkSecretKey = new sst.Secret(`ClerkSecretKey`);
     const claudeApiKey = new sst.Secret(`ClaudeApiKey`);
+    const openaiApiKey = new sst.Secret(`OpenaiApiKey`);
     const config = new sst.Linkable('Config', {
       properties: {
         PERMANENT_STAGE: isPermanentStage,
@@ -57,7 +58,7 @@ export default $config({
 
     const api = new sst.aws.Function(`API`, {
       handler: './packages/functions/src/api/index.handler',
-      link: [database, config, clerkSecretKey, slackClientId, slackClientSecret, slackSigningSecret],
+      link: [database, config, openaiApiKey, clerkSecretKey, slackClientId, slackClientSecret, slackSigningSecret],
       url: {
         cors: {
           allowOrigins: ['*'],
@@ -82,8 +83,9 @@ export default $config({
 
     new sst.aws.Cron('StatusRunner', {
       job: {
-        handler: 'packages/functions/src/run.ts',
-        link: [database, slackClientId, slackClientSecret, slackSigningSecret],
+        handler: 'packages/functions/src/run.handler',
+        link: [database, claudeApiKey, openaiApiKey, slackClientId, slackClientSecret, slackSigningSecret],
+        vpc,
       },
       schedule: 'rate(1 minute)',
     });

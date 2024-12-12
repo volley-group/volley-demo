@@ -32,6 +32,10 @@ declare module "sst" {
       "type": "sst.aws.Postgres"
       "username": string
     }
+    "OpenaiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "SlackClientId": {
       "type": "sst.sst.Secret"
       "value": string

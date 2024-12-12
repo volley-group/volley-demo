@@ -2,18 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  ChevronDown,
-  ChevronUp,
-  Github,
-  GitBranch,
-  Globe,
-  Package,
-  Cloud,
-  Server,
-  Database,
-  FileCode,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { AppNavbar } from '@/components/app-navbar';
 import { cn } from '@/lib/utils';
@@ -101,7 +90,7 @@ export const Route = createFileRoute('/_authed/config')({
 
 function ConfigComponent() {
   // const { products, teamConfigs } = Route.useLoaderData();
-  const {products, teamConfigs} = Route.useLoaderData();
+  const { products, teamConfigs } = Route.useLoaderData();
   const { hc } = Route.useRouteContext();
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [enabledServices, setEnabledServices] = useState<Set<string>>(new Set());
@@ -129,36 +118,36 @@ function ConfigComponent() {
     // setEnabledProducts(newEnabled);
   };
 
-  const getIconForProduct = (productId: string, serviceId: string) => {
-    if (productId === 'github') {
-      switch (serviceId) {
-        case 'actions':
-          return <GitBranch className="h-5 w-5" />;
-        case 'api':
-          return <Github className="h-5 w-5" />;
-        case 'pages':
-          return <Globe className="h-5 w-5" />;
-        case 'packages':
-          return <Package className="h-5 w-5" />;
-        default:
-          return <Github className="h-5 w-5" />;
-      }
-    } else if (productId === 'aws') {
-      switch (serviceId) {
-        case 'ec2':
-          return <Server className="h-5 w-5" />;
-        case 's3':
-          return <Cloud className="h-5 w-5" />;
-        case 'lambda':
-          return <FileCode className="h-5 w-5" />;
-        case 'rds':
-          return <Database className="h-5 w-5" />;
-        default:
-          return <Cloud className="h-5 w-5" />;
-      }
-    }
-    return <Cloud className="h-5 w-5" />;
-  };
+  // const getIconForProduct = (productId: string, serviceId: string) => {
+  //   if (productId === 'github') {
+  //     switch (serviceId) {
+  //       case 'actions':
+  //         return <GitBranch className="h-5 w-5" />;
+  //       case 'api':
+  //         return <Github className="h-5 w-5" />;
+  //       case 'pages':
+  //         return <Globe className="h-5 w-5" />;
+  //       case 'packages':
+  //         return <Package className="h-5 w-5" />;
+  //       default:
+  //         return <Github className="h-5 w-5" />;
+  //     }
+  //   } else if (productId === 'aws') {
+  //     switch (serviceId) {
+  //       case 'ec2':
+  //         return <Server className="h-5 w-5" />;
+  //       case 's3':
+  //         return <Cloud className="h-5 w-5" />;
+  //       case 'lambda':
+  //         return <FileCode className="h-5 w-5" />;
+  //       case 'rds':
+  //         return <Database className="h-5 w-5" />;
+  //       default:
+  //         return <Cloud className="h-5 w-5" />;
+  //     }
+  //   }
+  //   return <Cloud className="h-5 w-5" />;
+  // };
 
   const filteredProducts = useMemo(
     () =>
@@ -219,6 +208,7 @@ function ConfigComponent() {
                         <CardHeader className="p-6">
                           <div className="flex items-center justify-between">
                             <div>
+                              <img src={product.logo} alt={`${product.name} logo`} className="h-8 w-8 rounded-md" />
                               <h3 className="text-xl font-semibold">{product.name}</h3>
                             </div>
                             <Button variant="ghost" size="icon">
@@ -256,7 +246,7 @@ function ConfigComponent() {
                                   onClick={() => toggleService(product.name, service.name)}
                                 >
                                   <div className="flex items-center gap-3">
-                                    {getIconForProduct(product.name, service.name)}
+                                    {/* {getIconForProduct(product.name, service.name)} */}
                                     <span className="font-medium">{service.name}</span>
                                   </div>
                                   <div className="flex items-center gap-2">

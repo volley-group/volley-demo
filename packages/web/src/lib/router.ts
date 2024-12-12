@@ -1,11 +1,10 @@
-import { hc, tsrpc, queryClient } from '@/lib/clients';
+import { hc, queryClient } from '@/lib/clients';
 import { routeTree } from '@/routeTree.gen';
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 
 export interface RouterContext {
   hc: typeof hc;
-  trpc: typeof tsrpc;
   queryClient: typeof queryClient;
 }
 
@@ -27,7 +26,7 @@ export interface RouterContext {
 export function createRouter(queryClient: QueryClient) {
   return createTanStackRouter({
     routeTree,
-    context: { queryClient, hc, trpc: tsrpc },
+    context: { queryClient, hc },
     defaultPreload: 'intent',
   });
 }

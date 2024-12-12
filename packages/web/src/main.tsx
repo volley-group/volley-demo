@@ -6,7 +6,7 @@ import { ClerkProvider } from '@clerk/clerk-react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { createRouter } from './lib/router';
-import { hc, tsrpc, queryClient } from './lib/clients';
+import { hc, queryClient } from './lib/clients';
 
 const CLERK_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 console.log('All env variables:', import.meta.env);
@@ -14,7 +14,7 @@ console.log('All env variables:', import.meta.env);
 const router = createRouter(queryClient);
 
 const App = () => {
-  return <RouterProvider router={router} context={{ queryClient, hc, trpc: tsrpc }} />;
+  return <RouterProvider router={router} context={{ queryClient, hc }} />;
 };
 
 // Render the app

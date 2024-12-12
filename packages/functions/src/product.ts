@@ -4,6 +4,13 @@ import { desc } from 'drizzle-orm';
 import { db } from './drizzle';
 import { StatusMessageTable } from './drizzle/schema.sql';
 import { Resource } from 'sst';
+import OpenAI from 'openai';
+import { z } from 'zod';
+import { zodResponseFormat } from 'openai/helpers/zod';
+
+const openai = new OpenAI({
+  apiKey: Resource.OpenaiApiKey.value,
+});
 
 export abstract class ProductFeed implements IProductFeed {
   abstract readonly name: string;
@@ -29,18 +36,15 @@ export abstract class ProductFeed implements IProductFeed {
       ? messages.filter((message) => message.pubDate > latestMessage.pubDate)
       : messages;
 
-    const classifiedMessages = await Promise.all(latestMessages.map(this.classifyMessage));
-    await db.insert(StatusMessageTable).values(classifiedMessages);
+    const classifiedMessages = await Promise.all(latestMessages.map((message) => this.classifyMessage(message)));
+    if (classifiedMessages.length > 0) {
+      await db.insert(StatusMessageTable).values(classifiedMessages);
+    }
 
     return classifiedMessages;
   }
 
   async classifyMessage(message: StatusMessage): Promise<ClassifiedMessage> {
-    const CLAUDE_API_KEY = Resource.ClaudeApiKey.value;
-    // if (!CLAUDE_API_KEY) {
-    //   throw new Error('pls add CLAUDE_API_KEY to your .env file');
-    // }
-
     const services = await this.getServices();
     const availableServiceNames = services.map((service) => service.name);
 
@@ -50,53 +54,42 @@ export abstract class ProductFeed implements IProductFeed {
       Please return only the names of services that are likely affected by this status message.
       Return the response as a JSON array of strings. If none of the given services are likely affected, return an empty array.`;
 
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': CLAUDE_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
-          max_tokens: 1000,
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-        }),
-      });
+    const affectedServicesSchema = z.object({
+      affectedServices: z.array(z.enum(['unknown', ...availableServiceNames])),
+    });
+    console.log('calling openai');
+    const chatCompletion = await openai.beta.chat.completions.parse({
+      model: 'gpt-4o-mini-2024-07-18',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: zodResponseFormat(affectedServicesSchema, 'affectedServices'),
+    });
 
-      // TODO: create typed errors
-      if (!response.ok) {
-        throw new Error(`Claude API request failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const content = data.content[0].text;
-
-      let affectedServices: string[] = [];
-      try {
-        affectedServices = JSON.parse(content);
-      } catch (e) {
-        console.error('Failed to parse Claude response:', content);
-      }
-
-      return {
-        ...message,
-        product: this.name,
-        affectedServices,
-      };
-    } catch (error) {
-      console.error('Error calling Claude API:', error);
+    if (
+      chatCompletion.choices[0].finish_reason === 'content_filter' ||
+      chatCompletion.choices[0].finish_reason === 'length' ||
+      chatCompletion.choices[0].message.refusal
+    ) {
+      console.error(
+        'OpenAI API request failed:',
+        chatCompletion.choices[0].finish_reason,
+        chatCompletion.choices[0].message.content,
+        chatCompletion.choices[0].message.refusal
+      );
       return {
         ...message,
         product: this.name,
         affectedServices: [],
       };
     }
+    const { affectedServices } = chatCompletion.choices[0].message.parsed!;
+
+    return {
+      ...message,
+      product: this.name,
+      affectedServices:
+        affectedServices.length === 1 && affectedServices[0] === 'unknown'
+          ? []
+          : affectedServices.filter((service) => service !== 'unknown'),
+    };
   }
 }
