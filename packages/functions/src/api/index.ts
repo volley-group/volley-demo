@@ -54,7 +54,16 @@ const api = new Hono()
           },
         })
         .returning();
+
       console.log('Saved new installation', installation.id);
+      const joinResponse = await slack.conversations.join({
+        token: installation.botToken,
+        channel: installation.incomingWebhook.channelId,
+      });
+      if (!joinResponse.ok) {
+        console.error('Failed to join channel', joinResponse.error);
+      }
+      console.log('Joined channel', joinResponse);
       const redirectUrl = Resource.Config.PERMANENT_STAGE ? '/feed' : 'http://localhost:5173/feed';
       return c.redirect(redirectUrl);
     }
