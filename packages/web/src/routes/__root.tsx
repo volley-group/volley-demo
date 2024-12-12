@@ -14,7 +14,7 @@ const TanStackRouterDevtools =
       );
 
 const RootComponent = () => (
-  <div className="h-screen scroll-auto flex flex-col bg-amber-50">
+  <div className="h-screen scroll-auto flex flex-col">
     <Outlet />
     <Toaster />
     <Suspense>
