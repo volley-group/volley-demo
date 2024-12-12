@@ -10,7 +10,7 @@ import { Resource } from 'sst';
 import { db } from '../drizzle';
 import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } from '../drizzle/schema.sql';
 import { authenticatedMiddleware, clerkMiddleware } from './middleware';
-import { eq, getTableColumns } from 'drizzle-orm';
+import { eq, getTableColumns, inArray } from 'drizzle-orm';
 import { getFeeds } from '../feeds';
 import type { IService } from '../types';
 
@@ -135,13 +135,20 @@ const api = new Hono()
   .get('/status-messages', async (c) => {
     const { userId } = c.get('auth');
     const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+    const team = await db.query.SlackInstallationTable.findFirst({
+      where: eq(SlackInstallationTable.teamId, user.teamId),
+      columns: { id: true },
+      with: {
+        configs: true,
+      },
+    });
     const messages = await db
       .select({
         ...getTableColumns(StatusMessageTable),
       })
       .from(StatusMessageTable)
-      .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
-      .where(eq(SlackInstallationTable.teamId, user.teamId));
+      .where(inArray(StatusMessageTable.product, team!.configs.map((c) => c.product)));
+      
     return c.json({ teamId: user.teamId, messages }, 200);
   })
   .get('/get-feed-and-configs', async (c) => {

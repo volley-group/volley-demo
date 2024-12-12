@@ -43,11 +43,11 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7
       drizzle-orm:
-        specifier: ^0.35.3
-        version: 0.35.3(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1)
+        specifier: ^0.36.4
+        version: 0.36.4(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1)
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1))(zod@3.23.8)
+        version: 0.5.1(drizzle-orm@0.36.4(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1))(zod@3.23.8)
       hono:
         specifier: ^4.6.3
         version: 4.6.11
@@ -77,8 +77,8 @@ importers:
         specifier: ^8.11.10
         version: 8.11.10
       drizzle-kit:
-        specifier: ^0.26.2
-        version: 0.26.2
+        specifier: ^0.28.1
+        version: 0.28.1
 
   packages/web:
     dependencies:
@@ -2923,19 +2923,19 @@ packages:
   dot-case@3.0.4:
     resolution: {integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==}
 
-  drizzle-kit@0.26.2:
-    resolution: {integrity: sha512-cMq8omEKywjIy5KcqUo6LvEFxkl8/zYHsgYjFVXjmPWWtuW4blcz+YW9+oIhoaALgs2ebRjzXwsJgN9i6P49Dw==}
+  drizzle-kit@0.28.1:
+    resolution: {integrity: sha512-JimOV+ystXTWMgZkLHYHf2w3oS28hxiH1FR0dkmJLc7GHzdGJoJAQtQS5DRppnabsRZwE2U1F6CuezVBgmsBBQ==}
     hasBin: true
 
-  drizzle-orm@0.35.3:
-    resolution: {integrity: sha512-Uv6N+b36x4BaZlxc96e+ag7RnMapBLGhc4SSi2F7RDwqYJipWjaU/P68RUp1FbW9r+mxoDp8nMz2Eece8PJxfA==}
+  drizzle-orm@0.36.4:
+    resolution: {integrity: sha512-1OZY3PXD7BR00Gl61UUOFihslDldfH4NFRH2MbP54Yxi0G/PKn4HfO65JYZ7c16DeP3SpM3Aw+VXVG9j6CRSXA==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=3'
-      '@electric-sql/pglite': '>=0.1.1'
+      '@electric-sql/pglite': '>=0.2.0'
       '@libsql/client': '>=0.10.0'
       '@libsql/client-wasm': '>=0.10.0'
-      '@neondatabase/serverless': '>=0.1'
+      '@neondatabase/serverless': '>=0.10.0'
       '@op-engineering/op-sqlite': '>=2'
       '@opentelemetry/api': ^1.4.1
       '@planetscale/database': '>=1'
@@ -2949,7 +2949,7 @@ packages:
       '@xata.io/client': '*'
       better-sqlite3: '>=7'
       bun-types: '*'
-      expo-sqlite: '>=13.2.0'
+      expo-sqlite: '>=14.0.0'
       knex: '*'
       kysely: '*'
       mysql2: '>=2'
@@ -2967,6 +2967,8 @@ packages:
       '@electric-sql/pglite':
         optional: true
       '@libsql/client':
+        optional: true
+      '@libsql/client-wasm':
         optional: true
       '@neondatabase/serverless':
         optional: true
@@ -5332,10 +5334,12 @@ snapshots:
     dependencies:
       '@libsql/core': 0.14.0
       js-base64: 3.7.7
+    optional: true
 
   '@libsql/core@0.14.0':
     dependencies:
       js-base64: 3.7.7
+    optional: true
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -6998,7 +7002,7 @@ snapshots:
       no-case: 3.0.4
       tslib: 2.8.1
 
-  drizzle-kit@0.26.2:
+  drizzle-kit@0.28.1:
     dependencies:
       '@drizzle-team/brocli': 0.10.2
       '@esbuild-kit/esm-loader': 2.6.5
@@ -7007,18 +7011,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.35.3(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1):
-    dependencies:
-      '@libsql/client-wasm': 0.14.0
+  drizzle-orm@0.36.4(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1):
     optionalDependencies:
+      '@libsql/client-wasm': 0.14.0
       '@types/pg': 8.11.10
       '@types/react': 18.3.12
       pg: 8.13.1
       react: 18.3.1
 
-  drizzle-zod@0.5.1(drizzle-orm@0.35.3(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1))(zod@3.23.8):
+  drizzle-zod@0.5.1(drizzle-orm@0.36.4(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1))(zod@3.23.8):
     dependencies:
-      drizzle-orm: 0.35.3(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1)
+      drizzle-orm: 0.36.4(@libsql/client-wasm@0.14.0)(@types/pg@8.11.10)(@types/react@18.3.12)(pg@8.13.1)(react@18.3.1)
       zod: 3.23.8
 
   eastasianwidth@0.2.0: {}
@@ -7569,7 +7572,8 @@ snapshots:
 
   jose@5.2.3: {}
 
-  js-base64@3.7.7: {}
+  js-base64@3.7.7:
+    optional: true
 
   js-cookie@3.0.5: {}
 

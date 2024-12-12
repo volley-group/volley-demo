@@ -3,10 +3,6 @@ import pg from 'pg';
 import * as schema from './schema.sql';
 import { Resource } from 'sst';
 
-// export const schema = {
-//   ...statusMessageSchema,
-// };
-
 const pool = new pg.Pool({
   host: Resource.Database.host,
   port: Resource.Database.port,

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import { text, pgTable, timestamp, jsonb, serial, integer, primaryKey, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const UserTable = pgTable(
@@ -40,6 +40,17 @@ export const ConfigTable = pgTable(
   },
   (table) => [primaryKey({ columns: [table.installationId, table.product] })]
 );
+
+export const InstallationRelations = relations(SlackInstallationTable, ({ many }) => ({
+  configs: many(ConfigTable),
+}));
+
+export const ConfigTableRelations = relations(ConfigTable, ({ one }) => ({
+  installation: one(SlackInstallationTable, {
+    fields: [ConfigTable.installationId],
+    references: [SlackInstallationTable.id],
+  }),
+}));
 
 export const StatusMessageTable = pgTable('status_messages', {
   guid: text('guid').primaryKey(),
