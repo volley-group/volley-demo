@@ -62,6 +62,10 @@ const api = new Hono()
       return c.redirect(redirectUrl);
     }
   )
+  .get('/products', async (c) => {
+    const products = await Promise.all(feeds.map((f) => f.toJson()));
+    return c.json({ products }, 200);
+  })
   .get('/userId', async (c) => {
     const requestState = c.get('requestState');
     return c.json({ userId: requestState.status === 'signed-in' ? requestState.toAuth().userId : null }, 200);

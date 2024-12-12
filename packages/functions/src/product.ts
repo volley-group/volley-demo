@@ -20,6 +20,16 @@ export abstract class ProductFeed implements IProductFeed {
   abstract getServices(): Promise<IService[]>;
   abstract getFeed(): Promise<StatusMessage[]>;
 
+  async toJson() {
+    const services = await this.getServices();
+    return {
+      name: this.name,
+      displayName: this.displayName,
+      logo: this.logo,
+      services: services,
+    };
+  }
+
   async refreshStatusMessages(): Promise<ClassifiedMessage[]> {
     const latestMessage = await db
       .select()

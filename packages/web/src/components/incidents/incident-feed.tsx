@@ -1,5 +1,4 @@
-import { Incident } from "src/types/incident";
-import { IncidentCard } from "./incident-card";
+import { IncidentCard, type Incident } from './incident-card';
 
 export function IncidentFeed({ incidents }: { incidents: Incident[] }) {
   return (

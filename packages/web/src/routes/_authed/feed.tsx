@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { IncidentFeed } from '@/components/incidents/incident-feed';
 import { AppNavbar } from '@/components/app-navbar';
 import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Check, Filter } from 'lucide-react';
+import { Check, Filter, Loader2Icon } from 'lucide-react';
+import { hc } from '@/lib/clients';
+import { useQuery, queryOptions } from '@tanstack/react-query';
+import { MessageFeed } from '@/components/messages/message-feed';
 
 interface ServiceWithContext {
   name: string;
@@ -15,13 +17,28 @@ interface ServiceWithContext {
   displayName: string; // Format: "Product - Service"
 }
 
+const messagesQuery = queryOptions({
+  queryKey: ['messages'],
+  queryFn: () => hc['status-messages'].$get().then((r) => r.json()),
+});
+
+const productsQuery = queryOptions({
+  queryKey: ['products'],
+  queryFn: () => hc['products'].$get().then((r) => r.json()),
+});
+
 export const Route = createFileRoute('/_authed/feed')({
   component: FeedComponent,
-  loader: async ({ context: { hc } }) => await hc['status-messages'].$get().then(r => r.json()),
+  loader: ({ context: { queryClient } }) => {
+    queryClient.ensureQueryData(messagesQuery);
+    queryClient.ensureQueryData(productsQuery);
+  },
 });
 
 function FeedComponent() {
-  const { teamId, messages } = Route.useLoaderData();
+  const { data: messagesData } = useQuery(messagesQuery);
+  const { data: productsData } = useQuery(productsQuery);
+
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,31 +46,35 @@ function FeedComponent() {
   const [productSearchQuery, setProductSearchQuery] = useState('');
 
   // Extract unique products and services
-  const { products, services } = useMemo(() => {
-    const productsSet = new Set(messages.map((message) => message.product));
+  // const { products, services } = useMemo(() => {
+  //   const productsSet = new Set(messages.map((message) => message.product));
 
-    // Create services with product context
-    const servicesWithContext: ServiceWithContext[] = messages.flatMap((message) =>
-      message.affectedServices.map((service) => ({
-        name: service,
-        product: message.product,
-        displayName: `${message.product} - ${service}`,
-      }))
-    );
+  //   // Create services with product context
+  //   const servicesWithContext: ServiceWithContext[] = messages.flatMap((message) =>
+  //     message.affectedServices.map((service) => ({
+  //       name: service,
+  //       product: message.product,
+  //       displayName: `${message.product} - ${service}`,
+  //     }))
+  //   );
 
-    // Remove duplicates by creating a Map with displayName as key
-    const uniqueServices = Array.from(
-      new Map(servicesWithContext.map((service) => [service.displayName, service])).values()
-    ).sort((a, b) => a.displayName.localeCompare(b.displayName));
+  //   // Remove duplicates by creating a Map with displayName as key
+  //   const uniqueServices = Array.from(
+  //     new Map(servicesWithContext.map((service) => [service.displayName, service])).values()
+  //   ).sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-    return {
-      products: Array.from(productsSet),
-      services: uniqueServices,
-    };
-  }, [messages]);
+  //   return {
+  //     products: Array.from(productsSet),
+  //     services: uniqueServices,
+  //   };
+  // }, [messages]);
 
+  const messages = useMemo(() => messagesData?.messages || [], [messagesData]);
+  const products = useMemo(() => productsData?.products || [], [productsData]);
+  const services = useMemo(() => products.flatMap((product) => product.services), [products]);
   // Filter incidents based on selections
   const filteredIncidents = useMemo(() => {
+    console.log(messages.length);
     return messages.filter((message) => {
       const matchesProduct = selectedProducts.size === 0 || selectedProducts.has(message.product);
       const matchesService =
@@ -75,7 +96,7 @@ function FeedComponent() {
 
   // Add products filter
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => product.toLowerCase().includes(productSearchQuery.toLowerCase()));
+    return products.filter((product) => product.displayName.toLowerCase().includes(productSearchQuery.toLowerCase()));
   }, [products, productSearchQuery]);
 
   const toggleProduct = (product: string) => {
@@ -98,25 +119,24 @@ function FeedComponent() {
     setSelectedServices(newSelected);
   };
 
+  if (!messagesData || !productsData) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading feed...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <AppNavbar />
       <main className="mx-auto max-w-7xl p-4 pt-20">
         <div className="flex gap-8">
           <div className="flex-1">
-            <IncidentFeed
-              incidents={filteredIncidents.map((message) => ({
-                id: message.guid,
-                title: message.title,
-                description: message.content,
-                timestamp: message.pubDate, // fallback to current date if invalid
-                product: message.product,
-                service: message.affectedServices[0] || 'Unknown',
-                status: 'monitoring',
-                severity: 'major',
-                productIcon: '',
-              }))}
-            />
+            <MessageFeed messages={filteredIncidents} />
           </div>
 
           <div className="w-64 shrink-0">
@@ -154,14 +174,14 @@ function FeedComponent() {
                       <div className="space-y-1 p-2">
                         {filteredProducts.map((product) => (
                           <button
-                            key={product}
-                            onClick={() => toggleProduct(product)}
+                            key={product.name}
+                            onClick={() => toggleProduct(product.name)}
                             className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
-                              selectedProducts.has(product) ? 'bg-gray-100' : ''
+                              selectedProducts.has(product.name) ? 'bg-gray-100' : ''
                             }`}
                           >
-                            {product}
-                            {selectedProducts.has(product) && <Check className="h-4 w-4" />}
+                            {product.displayName}
+                            {selectedProducts.has(product.name) && <Check className="h-4 w-4" />}
                           </button>
                         ))}
                       </div>

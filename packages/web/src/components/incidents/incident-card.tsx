@@ -1,24 +1,35 @@
-import { Card } from "@/components/ui/card";
-import { Incident } from "src/types/incident";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { Card } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+
+export type Incident = {
+  id: string;
+  title: string;
+  // status: 'investigating' | 'monitoring' | 'resolved';
+  // severity: 'critical' | 'major' | 'minor';
+  timestamp: Date;
+  product: string;
+  service: string;
+  description: string;
+  productIcon?: string;
+};
 
 interface IncidentCardProps {
   incident: Incident;
 }
 
 export function IncidentCard({ incident }: IncidentCardProps) {
-  const statusColors = {
-    investigating: "bg-destructive text-destructive-foreground",
-    monitoring: "bg-orange-500/10 text-orange-700",
-    resolved: "bg-green-500 text-green-950",
-  };
+  // const statusColors = {
+  //   investigating: 'bg-destructive text-destructive-foreground',
+  //   monitoring: 'bg-orange-500/10 text-orange-700',
+  //   resolved: 'bg-green-500 text-green-950',
+  // };
 
-  const severityColors = {
-    critical: "bg-red-500/10 text-red-700 border-red-200",
-    major: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-    minor: "bg-gray-100 text-gray-700 border-gray-200",
-  };
+  // const severityColors = {
+  //   critical: 'bg-red-500/10 text-red-700 border-red-200',
+  //   major: 'bg-yellow-500/10 text-yellow-700 border-yellow-200',
+  //   minor: 'bg-gray-100 text-gray-700 border-gray-200',
+  // };
 
   return (
     <Card className="overflow-hidden border-border/40 bg-card/60 backdrop-blur-[2px] transition-all hover:border-gray-300/20 hover:shadow-lg">
@@ -28,11 +39,7 @@ export function IncidentCard({ incident }: IncidentCardProps) {
           <div className="flex items-center gap-3">
             {incident.productIcon && (
               <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border/40 bg-background/80 p-2 shadow-sm">
-                <img
-                  src={incident.productIcon}
-                  alt={incident.product}
-                  className="h-full w-full object-contain"
-                />
+                <img src={incident.productIcon} alt={incident.product} className="h-full w-full object-contain" />
               </div>
             )}
             <div>
@@ -41,7 +48,7 @@ export function IncidentCard({ incident }: IncidentCardProps) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge
+            {/* <Badge
               variant="secondary"
               className={`${statusColors[incident.status]} pointer-events-none px-3 py-1 capitalize shadow-sm`}
             >
@@ -52,7 +59,7 @@ export function IncidentCard({ incident }: IncidentCardProps) {
               className={`${severityColors[incident.severity]} pointer-events-none border px-3 py-1 capitalize shadow-sm`}
             >
               {incident.severity}
-            </Badge>
+            </Badge> */}
           </div>
         </div>
 

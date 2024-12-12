@@ -56,7 +56,7 @@ export const StatusMessageTable = pgTable('status_messages', {
   guid: text('guid').primaryKey(),
   title: text('title').notNull(),
   content: text('content').notNull(),
-  pubDate: timestamp('pub_date', { mode: 'date' }).notNull(),
+  pubDate: timestamp('pub_date', { mode: 'string' }).notNull(),
   product: text('product').notNull(),
   affectedServices: jsonb('affected_services').$type<string[]>().notNull().default([]),
 });
