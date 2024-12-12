@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { hc } from '@/lib/clients';
 import { Skeleton } from '../ui/skeleton';
 import { useMemo } from 'react';
+import { Badge } from '../ui/badge';
 
 export function MessageCard({ message }: { message: ClassifiedMessage }) {
   // const statusColors = {
@@ -67,6 +68,7 @@ export function MessageCard({ message }: { message: ClassifiedMessage }) {
   return (
     <Card className="overflow-hidden border-border/40 bg-card/60 backdrop-blur-[2px] transition-all hover:border-gray-300/20 hover:shadow-lg">
       <div className="p-6">
+        {/* Service Alert Banner */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {product.logo && (
@@ -75,11 +77,16 @@ export function MessageCard({ message }: { message: ClassifiedMessage }) {
               </div>
             )}
             <div>
-              <div className="text-sm font-medium text-muted-foreground">{product.name}</div>
-              <div className="text-xl font-semibold text-foreground">{message.affectedServices.join(', ')}</div>
+              <div className="text-lg font-medium">{product.displayName}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2"></div>
+          <div className="flex items-center gap-2">
+            {message.affectedServices.map((service) => (
+              <Badge key={service} variant="secondary" className="pointer-events-none px-3 py-1 capitalize shadow-sm">
+                {service}
+              </Badge>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
