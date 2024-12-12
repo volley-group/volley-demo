@@ -101,14 +101,14 @@ export default $config({
       },
     });
 
-    // new sst.aws.Cron('StatusRunner', {
-    //   job: {
-    //     handler: 'packages/functions/src/run.handler',
-    //     link: [database, claudeApiKey, openaiApiKey, slackClientId, slackClientSecret, slackSigningSecret],
-    //     vpc,
-    //   },
-    //   schedule: 'rate(1 minute)',
-    // });
+    new sst.aws.Cron('StatusRunner', {
+      job: {
+        handler: 'packages/functions/src/run.handler',
+        link: [database, claudeApiKey, openaiApiKey, slackClientId, slackClientSecret, slackSigningSecret],
+        vpc,
+      },
+      schedule: 'rate(1 minute)',
+    });
 
     const router = new sst.aws.Router('Router', {
       domain: appDomain,

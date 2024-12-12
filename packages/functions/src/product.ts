@@ -43,7 +43,7 @@ export abstract class ProductFeed implements IProductFeed {
     if (messages.length === 0) return [];
 
     const latestMessages = latestMessage
-      ? messages.filter((message) => message.pubDate > latestMessage.pubDate)
+      ? messages.filter((message) => new Date(message.pubDate) > new Date(latestMessage.pubDate))
       : messages;
 
     const classifiedMessages = await Promise.all(latestMessages.map((message) => this.classifyMessage(message)));

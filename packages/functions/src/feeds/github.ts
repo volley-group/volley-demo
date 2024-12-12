@@ -61,7 +61,7 @@ export class GitHub extends ProductFeed {
       guid: item.guid,
       title: item.title,
       content: item.content,
-      pubDate: new Date(item.pubDate),
+      pubDate: new Date(item.pubDate).toISOString(),
     }));
   }
 }

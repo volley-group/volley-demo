@@ -28,7 +28,7 @@ const api = new Hono()
         code: code,
         client_id: Resource.SlackClientId.value,
         client_secret: Resource.SlackClientSecret.value,
-        redirect_uri: `${new URL(c.req.url).origin}/api/auth/slack/oauth_redirect`,
+        redirect_uri: `https://${Resource.Config.DOMAIN}/api/auth/slack/oauth_redirect`,
       });
 
       const [installation] = await db
