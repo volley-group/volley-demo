@@ -67,7 +67,6 @@ export function MessageCard({ message }: { message: ClassifiedMessage }) {
   return (
     <Card className="overflow-hidden border-border/40 bg-card/60 backdrop-blur-[2px] transition-all hover:border-gray-300/20 hover:shadow-lg">
       <div className="p-6">
-        {/* Service Alert Banner */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {product.logo && (
@@ -80,30 +79,16 @@ export function MessageCard({ message }: { message: ClassifiedMessage }) {
               <div className="text-xl font-semibold text-foreground">{message.affectedServices.join(', ')}</div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* <Badge
-              variant="secondary"
-              className={`${statusColors[incident.status]} pointer-events-none px-3 py-1 capitalize shadow-sm`}
-            >
-              {incident.status}
-            </Badge>
-            <Badge
-              variant="outline"
-              className={`${severityColors[incident.severity]} pointer-events-none border px-3 py-1 capitalize shadow-sm`}
-            >
-              {incident.severity}
-            </Badge> */}
-          </div>
+          <div className="flex items-center gap-2"></div>
         </div>
 
         {/* Content */}
         <div className="space-y-4">
           <div>
             <h3 className="mb-2 text-lg font-semibold text-foreground">{message.title}</h3>
-            <p className="text-muted-foreground">{message.content}</p>
+            <div className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: message.content }} />
           </div>
 
-          {/* Timestamp */}
           <div className="text-sm text-muted-foreground/80">
             <div>{format(message.pubDate, "MMM dd, yyyy 'at' HH:mm")}</div>
           </div>
