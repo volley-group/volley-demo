@@ -24,9 +24,6 @@ const api = new Hono()
     zValidator('query', z.object({ code: z.string(), state: z.string().optional() })),
     async (c) => {
       const { code } = c.req.valid('query');
-      console.log(code);
-      console.log(new URL(c.req.url).origin);
-      console.log(Resource.Config.PERMANENT_STAGE);
       const response = await slack.oauth.v2.access({
         code: code,
         client_id: Resource.SlackClientId.value,
@@ -85,12 +82,10 @@ const api = new Hono()
     const { userId } = c.get('auth');
     const clerk = c.get('clerk');
     const accessTokens = (await clerk.users.getUserOauthAccessToken(userId!, 'oauth_slack')).data;
-    console.log(accessTokens);
     const token = accessTokens[0].token || '';
     const userInfo = await slack.openid.connect.userInfo({
       token,
     });
-    console.log(userInfo);
     const [savedUser] = await db
       .insert(UserTable)
       .values({
@@ -109,7 +104,6 @@ const api = new Hono()
         },
       })
       .returning();
-    console.log(savedUser);
 
     const [existingInstallation] = await db
       .select({
@@ -127,9 +121,7 @@ const api = new Hono()
   })
   .get('/user', async (c) => {
     const userId = c.get('auth').userId;
-    console.log(userId);
     const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
-    console.log(user);
     const [installation] = await db
       .select({ id: SlackInstallationTable.id })
       .from(SlackInstallationTable)

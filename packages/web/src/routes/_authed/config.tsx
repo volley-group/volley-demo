@@ -39,7 +39,6 @@ function ConfigComponent() {
     mutationFn: (data: { product: string; service: string; action: 'add' | 'remove' }) =>
       hc.configs.$post({ json: data }).then((r) => r.json()),
     onMutate: (data) => {
-      console.log(data);
       const previousData = queryClient.getQueryData(configsQuery.queryKey);
       const productConfig = previousData?.configs?.find((c) => c.product === data.product);
       const productServices = productConfig?.services || [];

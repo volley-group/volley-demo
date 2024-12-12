@@ -69,7 +69,6 @@ function FeedComponent() {
   const services = useMemo(() => products.flatMap((product) => product.services), [products]);
   // Filter incidents based on selections
   const filteredIncidents = useMemo(() => {
-    console.log(messages.length);
     return messages.filter((message) => {
       const matchesProduct = selectedProducts.size === 0 || selectedProducts.has(message.product);
       const matchesService =

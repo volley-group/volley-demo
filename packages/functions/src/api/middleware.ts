@@ -85,10 +85,8 @@ export const authenticatedMiddleware = ({
 }: { allowUnauthenticated?: boolean } = {}): MiddlewareHandler => {
   return async (c, next) => {
     const request = c.get('requestState');
-    // console.log('request state', request);
     if (!request.isSignedIn) {
       if (allowUnauthenticated) {
-        console.log('allowing unauthenticated');
         return next();
       }
       throw new HTTPException(401, { message: 'Unauthorized' });
