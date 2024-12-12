@@ -1,0 +1,21 @@
+name: braid
+services:
+  db:
+    image: postgres:17.0-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: braid
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '54326:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-d', 'braid']
+      interval: 1s
+      timeout: 5s
+      retries: 10
+volumes:
+  pgdata:
+    driver: local
