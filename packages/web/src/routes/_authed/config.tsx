@@ -1,101 +1,101 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2Icon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { AppNavbar } from '@/components/app-navbar';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
+import { hc, queryClient } from '@/lib/clients';
+import type { InferResponseType } from 'hono/client';
 
-// const feeds = createServerFn({ method: "GET" })
-//   .validator(z.object({ teamId: z.string() }))
-//   .handler(async ({ data }) => {
-//     // const { userId } = await getAuth(getWebRequest());
-//     // const clerk = await clerkClient({
-//     //   secretKey: Resource.ClerkSecretKey.value,
-//     // });
-//     // const accessTokens = (await clerk.users.getUserOauthAccessToken(userId!, "oauth_slack")).data;
-//     // const token = accessTokens[0].token || "";
-//     // const userInfo = await client.openid.connect.userInfo({
-//     //   token,
-//     // });
-//     const teamConfigs = await db
-//       .select({ ...getTableColumns(ConfigTable), teamId: SlackInstallationTable.teamId })
-//       .from(ConfigTable)
-//       .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
-//       .where(eq(SlackInstallationTable.teamId, data.teamId));
-//     const products = await getFeeds();
-//     const services = await products.reduce(
-//       async (acc, product) => {
-//         const services = await product.getServices();
-//         return {
-//           ...(await acc),
-//           [product.name]: services,
-//         };
-//       },
-//       Promise.resolve({} as Record<string, IService[]>),
-//     );
-//     const productsWithServices = products.map((product) => ({
-//       name: product.name,
-//       displayName: product.displayName,
-//       logo: product.logo,
-//       services: services[product.name],
-//     }));
-//     return { products: productsWithServices, teamConfigs };
-//   });
+const productsQuery = queryOptions({
+  queryKey: ['products'],
+  queryFn: () => hc['products'].$get().then((r) => r.json()),
+});
 
-// const toggleService = createServerFn({ method: "POST" })
-//   .validator(z.object({ product: z.string(), service: z.string(), installationId: z.number() }))
-//   .handler(async ({ data }) => {
-//     const [config] = await db
-//       .select({ services: ConfigTable.services })
-//       .from(ConfigTable)
-//       .where(and(eq(ConfigTable.installationId, data.installationId), eq(ConfigTable.product, data.product)));
-//     if (!config) {
-//       await db
-//         .insert(ConfigTable)
-//         .values({ product: data.product, installationId: data.installationId, services: [data.service] })
-//         .onConflictDoUpdate({
-//           target: [ConfigTable.product, ConfigTable.installationId],
-//           set: {
-//             services: sql`array_remove(${ConfigTable.services}, ${data.service})`,
-//           },
-//         });
-//     } else {
-//       config.services.includes(data.service)
-//         ? await db
-//             .update(ConfigTable)
-//             .set({ services: sql`array_remove(${ConfigTable.services}, ${data.service})` })
-//             .where(
-//               and(eq(ConfigTable.installationId, data.installationId), eq(ConfigTable.product, data.product)),
-//             )
-//         : await db
-//             .update(ConfigTable)
-//             .set({ services: sql`array_append(${ConfigTable.services}, ${data.service})` })
-//             .where(
-//               and(eq(ConfigTable.installationId, data.installationId), eq(ConfigTable.product, data.product)),
-//             );
-//     }
-//   });
+const configsQuery = queryOptions({
+  queryKey: ['configs'],
+  queryFn: () => hc['configs'].$get().then((r) => r.json()),
+});
 
 export const Route = createFileRoute('/_authed/config')({
   component: ConfigComponent,
-  loader: async ({ context: { hc } }) => {
-    return await hc['get-feed-and-configs'].$get().then((r) => r.json());
+  loader: ({ context: { queryClient } }) => {
+    queryClient.ensureQueryData(productsQuery);
+    queryClient.ensureQueryData(configsQuery);
   },
 });
 
 function ConfigComponent() {
-  // const { products, teamConfigs } = Route.useLoaderData();
-  const { products, teamConfigs } = Route.useLoaderData();
-  const { hc } = Route.useRouteContext();
+  const { isLoading: loadingProducts, data: productsData } = useQuery(productsQuery);
+  const { isLoading: loadingConfigs, data: configsData } = useQuery(configsQuery);
+
+  const configMutation = useMutation({
+    mutationFn: (data: { product: string; service: string; action: 'add' | 'remove' }) =>
+      hc.configs.$post({ json: data }).then((r) => r.json()),
+    onMutate: (data) => {
+      console.log(data);
+      const previousData = queryClient.getQueryData(configsQuery.queryKey);
+      const productConfig = previousData?.configs?.find((c) => c.product === data.product);
+      const productServices = productConfig?.services || [];
+      queryClient.setQueryData(configsQuery.queryKey, (oldData) => {
+        return productConfig
+          ? {
+              configs: oldData!.configs.map((config) => {
+                if (config.product === productConfig.product) {
+                  return {
+                    ...config,
+                    services:
+                      data.action === 'add'
+                        ? [...productServices, data.service]
+                        : productServices.filter((s) => s !== data.service),
+                  };
+                }
+                return config;
+              }),
+            }
+          : {
+              configs: [
+                {
+                  installationId: 0,
+                  product: data.product,
+                  services: [data.service],
+                },
+              ],
+            };
+      });
+      return { previousData };
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(configsQuery.queryKey, (oldData) => {
+        return {
+          ...oldData,
+          configs: oldData!.configs.map((c) => (c.product === data.config.product ? data.config : c)),
+        };
+      });
+    },
+    onError: (error, _, context) => {
+      console.error(error);
+      queryClient.setQueryData(configsQuery.queryKey, context?.previousData);
+    },
+  });
+
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
-  const [enabledServices, setEnabledServices] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
-  const [productSearchQueries, setProductSearchQueries] = useState<Record<string, string>>({});
+  const [serviceSearchQueries, setServiceSearchQueries] = useState<Record<string, string>>({});
+
+  const productServiceIsEnabled = useCallback(
+    (product: string, service: string) => {
+      return loadingConfigs
+        ? false
+        : configsData?.configs.some((config) => config.product == product && config.services.includes(service));
+    },
+    [configsData?.configs, loadingConfigs]
+  );
 
   const toggleProduct = (productId: string) => {
     const newExpanded = new Set(expandedProducts);
@@ -108,71 +108,50 @@ function ConfigComponent() {
   };
 
   const toggleService = (productId: string, serviceId: string) => {
-    const productKey = `${productId}-${serviceId}`;
-    // const newEnabled = new Set(enabledProducts);
-    // if (newEnabled.has(productKey)) {
-    //   newEnabled.delete(productKey);
-    // } else {
-    //   newEnabled.add(productKey);
-    // }
-    // setEnabledProducts(newEnabled);
+    configMutation.mutate({
+      product: productId,
+      service: serviceId,
+      action: productServiceIsEnabled(productId, serviceId) ? 'remove' : 'add',
+    });
   };
-
-  // const getIconForProduct = (productId: string, serviceId: string) => {
-  //   if (productId === 'github') {
-  //     switch (serviceId) {
-  //       case 'actions':
-  //         return <GitBranch className="h-5 w-5" />;
-  //       case 'api':
-  //         return <Github className="h-5 w-5" />;
-  //       case 'pages':
-  //         return <Globe className="h-5 w-5" />;
-  //       case 'packages':
-  //         return <Package className="h-5 w-5" />;
-  //       default:
-  //         return <Github className="h-5 w-5" />;
-  //     }
-  //   } else if (productId === 'aws') {
-  //     switch (serviceId) {
-  //       case 'ec2':
-  //         return <Server className="h-5 w-5" />;
-  //       case 's3':
-  //         return <Cloud className="h-5 w-5" />;
-  //       case 'lambda':
-  //         return <FileCode className="h-5 w-5" />;
-  //       case 'rds':
-  //         return <Database className="h-5 w-5" />;
-  //       default:
-  //         return <Cloud className="h-5 w-5" />;
-  //     }
-  //   }
-  //   return <Cloud className="h-5 w-5" />;
-  // };
 
   const filteredProducts = useMemo(
     () =>
-      products.filter(
-        (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.services.some((service) => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      ),
-    [products, searchQuery]
+      loadingProducts
+        ? []
+        : productsData?.products.filter(
+            (product) =>
+              product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              product.services.some((service) => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
+          ),
+    [productsData, searchQuery, loadingProducts]
   );
 
   const filteredServices = useCallback(
-    (product: (typeof products)[0]) => {
-      const productSearch = productSearchQueries[product.name] || '';
-      return product.services.filter((service) => product.name.toLowerCase().includes(productSearch.toLowerCase()));
+    (product: InferResponseType<(typeof hc)['products']['$get']>['products'][0]) => {
+      const serviceSearch = serviceSearchQueries[product.name] || '';
+      return product.services.filter((service) => service.name.toLowerCase().includes(serviceSearch.toLowerCase()));
     },
-    [productSearchQueries]
+    [serviceSearchQueries]
   );
 
-  const handleProductSearch = (serviceId: string, query: string) => {
-    setProductSearchQueries((prev) => ({
+  const handleServiceSearch = (productId: string, query: string) => {
+    setServiceSearchQueries((prev) => ({
       ...prev,
-      [serviceId]: query,
+      [productId]: query,
     }));
   };
+
+  if (!productsData || !configsData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="animate-spin w-8 h-8">
+          <Loader2Icon className="w-8 h-8" />
+        </div>
+        <p className="mt-4 text-muted-foreground">Loading configuration...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,7 +176,7 @@ function ConfigComponent() {
 
             <ScrollArea className="h-[calc(100vh-300px)]">
               <div className="space-y-4">
-                {filteredProducts.map((product) => (
+                {filteredProducts!.map((product) => (
                   <Collapsible
                     key={product.name}
                     open={expandedProducts.has(product.name)}
@@ -207,17 +186,15 @@ function ConfigComponent() {
                       <CollapsibleTrigger className="w-full text-left">
                         <CardHeader className="p-6">
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex items-center gap-2">
                               <img src={product.logo} alt={`${product.name} logo`} className="h-8 w-8 rounded-md" />
-                              <h3 className="text-xl font-semibold">{product.name}</h3>
+                              <h3 className="text-xl font-semibold">{product.displayName}</h3>
                             </div>
-                            <Button variant="ghost" size="icon">
-                              {expandedProducts.has(product.name) ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {expandedProducts.has(product.name) ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -227,27 +204,26 @@ function ConfigComponent() {
                           <div className="px-6 py-2">
                             <Input
                               placeholder={`Search ${product.name} products...`}
-                              value={productSearchQueries[product.name] || ''}
-                              onChange={(e) => handleProductSearch(product.name, e.target.value)}
+                              value={serviceSearchQueries[product.name] || ''}
+                              onChange={(e) => handleServiceSearch(product.name, e.target.value)}
                               className="w-full"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
                           <div className="divide-y">
                             {filteredServices(product).map((service) => {
-                              const isEnabled = enabledServices.has(`${product.name}-${service.name}`);
+                              const isEnabled = productServiceIsEnabled(product.name, service.name);
                               return (
-                                <button
-                                  key={product.name}
+                                <div
+                                  key={service.name}
                                   className={cn(
                                     'flex w-full items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50',
                                     isEnabled && 'bg-secondary'
                                   )}
-                                  onClick={() => toggleService(product.name, service.name)}
+                                  // onClick={() => toggleService(product.name, service.name)}
                                 >
                                   <div className="flex items-center gap-3">
-                                    {/* {getIconForProduct(product.name, service.name)} */}
-                                    <span className="font-medium">{service.name}</span>
+                                    <span className="font-medium">{service.displayName}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Switch
@@ -257,7 +233,7 @@ function ConfigComponent() {
                                       className="data-[state=checked]:bg-primary"
                                     />
                                   </div>
-                                </button>
+                                </div>
                               );
                             })}
                           </div>

@@ -7,7 +7,7 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const stage = loadEnv(mode, process.cwd()).VITE_STAGE;
-  const apiUrl = `https://b4bd5w7k5n3jqfd4cxqxvpyhum0jyojq.lambda-url.us-east-1.on.aws`;
+  const apiUrl = `https://${stage}.app.usebraid.com`;
   console.log('apiUrl', apiUrl);
 
   return {

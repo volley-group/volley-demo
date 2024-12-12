@@ -34,7 +34,9 @@ export const SlackInstallationTable = pgTable('slack_installations', {
 export const ConfigTable = pgTable(
   'config',
   {
-    installationId: integer('installation_id').references(() => SlackInstallationTable.id),
+    installationId: integer('installation_id')
+      .references(() => SlackInstallationTable.id)
+      .notNull(),
     product: text('product').notNull(),
     services: jsonb('services').$type<string[]>().notNull().default([]),
   },

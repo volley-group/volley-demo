@@ -15,6 +15,7 @@ export default $config({
               ? 'mesa-production'
               : 'mesa-development',
         },
+        cloudflare: true,
       },
     };
   },
@@ -27,12 +28,6 @@ export default $config({
     const clerkSecretKey = new sst.Secret(`ClerkSecretKey`);
     const claudeApiKey = new sst.Secret(`ClaudeApiKey`);
     const openaiApiKey = new sst.Secret(`OpenaiApiKey`);
-    const config = new sst.Linkable('Config', {
-      properties: {
-        PERMANENT_STAGE: isPermanentStage,
-        VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y29udGVudC1tdWxlLTI4LmNsZXJrLmFjY291bnRzLmRldiQ',
-      },
-    });
 
     const vpc = isPermanentStage
       ? new sst.aws.Vpc(`VPC`, { bastion: true, nat: 'ec2' })
@@ -56,6 +51,30 @@ export default $config({
             proxyId: `DevDatabaseProxy`,
           });
 
+    const domain =
+      {
+        production: 'app.usebraid.com',
+        dev: `dev.app.usebraid.com`,
+      }[$app.stage] || $app.stage + '.app.usebraid.com';
+
+    // export const zone = cloudflare.getZoneOutput({
+    //   name: 'mesa.dev',
+    // });
+
+    const appDomain = {
+      name: domain,
+      redirects: [`www.${domain}`],
+      dns: sst.cloudflare.dns(),
+    };
+
+    const config = new sst.Linkable('Config', {
+      properties: {
+        PERMANENT_STAGE: isPermanentStage,
+        VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y29udGVudC1tdWxlLTI4LmNsZXJrLmFjY291bnRzLmRldiQ',
+        DOMAIN: domain,
+      },
+    });
+
     const api = new sst.aws.Function(`API`, {
       handler: './packages/functions/src/api/index.handler',
       link: [database, config, openaiApiKey, clerkSecretKey, slackClientId, slackClientSecret, slackSigningSecret],
@@ -78,6 +97,7 @@ export default $config({
       dev: { command: 'pnpm --filter web run dev' },
       environment: {
         VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y29udGVudC1tdWxlLTI4LmNsZXJrLmFjY291bnRzLmRldiQ',
+        VITE_STAGE: $app.stage,
       },
     });
 
@@ -89,6 +109,14 @@ export default $config({
     //   },
     //   schedule: 'rate(1 minute)',
     // });
+
+    const router = new sst.aws.Router('Router', {
+      domain: appDomain,
+      routes: {
+        ...($dev ? {} : { '/*': webApp.url }),
+        '/api/*': api.url,
+      },
+    });
 
     if ($app.stage === 'production') {
       const databasePush = new sst.aws.Function(`DatabasePush`, {
@@ -123,6 +151,7 @@ export default $config({
     return {
       web: webApp.url,
       api: api.url,
+      router: router.url,
     };
   },
 });

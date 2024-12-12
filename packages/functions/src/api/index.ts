@@ -10,7 +10,7 @@ import { Resource } from 'sst';
 import { db } from '../drizzle';
 import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } from '../drizzle/schema.sql';
 import { authenticatedMiddleware, clerkMiddleware } from './middleware';
-import { eq, getTableColumns, inArray } from 'drizzle-orm';
+import { and, eq, getTableColumns, inArray } from 'drizzle-orm';
 import feeds from '../feeds';
 import type { IService } from '../types';
 
@@ -75,8 +75,7 @@ const api = new Hono()
       client_id: Resource.SlackClientId.value,
       scope: scopes.join(','),
       user_scope: userScopes.join(','),
-      redirect_uri:
-        'https://b4bd5w7k5n3jqfd4cxqxvpyhum0jyojq.lambda-url.us-east-1.on.aws/api/auth/slack/oauth_redirect',
+      redirect_uri: `https://${Resource.Config.DOMAIN}/api/auth/slack/oauth_redirect`,
     });
 
     return c.json(`https://slack.com/oauth/v2/authorize?${params.toString()}`);
@@ -162,32 +161,54 @@ const api = new Hono()
 
     return c.json({ teamId: user.teamId, messages }, 200);
   })
-  .get('/get-feed-and-configs', async (c) => {
+  .get('/configs', async (c) => {
     const { userId } = c.get('auth');
     const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
     const teamConfigs = await db
-      .select({ ...getTableColumns(ConfigTable), teamId: SlackInstallationTable.teamId })
+      .select({ ...getTableColumns(ConfigTable) })
       .from(ConfigTable)
       .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
       .where(eq(SlackInstallationTable.teamId, user.teamId));
-    const services = await feeds.reduce(
-      async (acc, product) => {
-        const services = await product.getServices();
-        return {
-          ...(await acc),
-          [product.name]: services,
-        };
-      },
-      Promise.resolve({} as Record<string, IService[]>)
-    );
-    const productsWithServices = feeds.map((product) => ({
-      name: product.name,
-      displayName: product.displayName,
-      logo: product.logo,
-      services: services[product.name],
-    }));
-    return c.json({ products: productsWithServices, teamConfigs }, 200);
-  });
+    return c.json({ configs: teamConfigs }, 200);
+  })
+  .post(
+    '/configs',
+    zValidator('json', z.object({ product: z.string(), service: z.string(), action: z.enum(['add', 'remove']) })),
+    async (c) => {
+      const { product, service, action } = c.req.valid('json');
+      const { userId } = c.get('auth');
+      const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+      const [installation] = await db
+        .select({ id: SlackInstallationTable.id })
+        .from(SlackInstallationTable)
+        .where(eq(SlackInstallationTable.teamId, user.teamId));
+
+      const updatedConfig = await db.transaction(async (tx) => {
+        const [config] = await tx
+          .select()
+          .from(ConfigTable)
+          .where(and(eq(ConfigTable.product, product), eq(ConfigTable.installationId, installation.id)));
+
+        const [updatedConfig] = await tx
+          .insert(ConfigTable)
+          .values({ product, services: [service], installationId: installation.id })
+          .onConflictDoUpdate({
+            target: [ConfigTable.installationId, ConfigTable.product],
+            set: {
+              services: config
+                ? action === 'add'
+                  ? [...config.services, service]
+                  : config.services.filter((s) => s !== service)
+                : [service],
+            },
+          })
+          .returning();
+        return updatedConfig;
+      });
+
+      return c.json({ config: updatedConfig }, 200);
+    }
+  );
 
 const routes = new Hono()
   .use(trimTrailingSlash())

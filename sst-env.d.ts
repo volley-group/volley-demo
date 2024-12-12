@@ -20,6 +20,7 @@ declare module "sst" {
       "value": string
     }
     "Config": {
+      "DOMAIN": string
       "PERMANENT_STAGE": boolean
       "VITE_CLERK_PUBLISHABLE_KEY": string
       "type": "sst.sst.Linkable"
@@ -35,6 +36,10 @@ declare module "sst" {
     "OpenaiApiKey": {
       "type": "sst.sst.Secret"
       "value": string
+    }
+    "Router": {
+      "type": "sst.aws.Router"
+      "url": string
     }
     "SlackClientId": {
       "type": "sst.sst.Secret"
