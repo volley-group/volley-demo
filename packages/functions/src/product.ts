@@ -3,6 +3,7 @@ import type { ClassifiedMessage, IService, StatusMessage, IProductFeed } from '.
 import { desc } from 'drizzle-orm';
 import { db } from './drizzle';
 import { StatusMessageTable } from './drizzle/schema.sql';
+import { Resource } from 'sst';
 
 export abstract class ProductFeed implements IProductFeed {
   abstract readonly name: string;
@@ -35,10 +36,10 @@ export abstract class ProductFeed implements IProductFeed {
   }
 
   async classifyMessage(message: StatusMessage): Promise<ClassifiedMessage> {
-    const CLAUDE_API_KEY = process.env['CLAUDE_API_KEY'];
-    if (!CLAUDE_API_KEY) {
-      throw new Error('pls add CLAUDE_API_KEY to your .env file');
-    }
+    const CLAUDE_API_KEY = Resource.ClaudeApiKey.value;
+    // if (!CLAUDE_API_KEY) {
+    //   throw new Error('pls add CLAUDE_API_KEY to your .env file');
+    // }
 
     const services = await this.getServices();
     const availableServiceNames = services.map((service) => service.name);

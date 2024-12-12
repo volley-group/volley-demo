@@ -25,6 +25,7 @@ export default $config({
     const slackClientSecret = new sst.Secret(`SlackClientSecret`);
     const slackSigningSecret = new sst.Secret(`SlackSigningSecret`);
     const clerkSecretKey = new sst.Secret(`ClerkSecretKey`);
+    const claudeApiKey = new sst.Secret(`ClaudeApiKey`);
     const config = new sst.Linkable('Config', {
       properties: {
         PERMANENT_STAGE: isPermanentStage,
