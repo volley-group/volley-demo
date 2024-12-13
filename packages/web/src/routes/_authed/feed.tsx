@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { AppNavbar } from '@/components/app-navbar';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,9 +37,9 @@ export const Route = createFileRoute('/_authed/feed')({
 });
 
 function FeedComponent() {
-  const { data: messagesData, isLoading: isLoadingMessages } = useQuery(messagesQuery);
-  const { data: productsData, isLoading: isLoadingProducts } = useQuery(productsQuery);
-  const { data: configsData, isLoading: isLoadingConfigs } = useQuery(configsQuery);
+  const { isLoading: isLoadingMessages, data: messagesData } = useQuery(messagesQuery);
+  const { isLoading: isLoadingProducts, data: productsData } = useQuery(productsQuery);
+  const { isLoading:isLoadingConfigs, data: configsData } = useQuery(configsQuery);
 
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
@@ -68,6 +68,14 @@ function FeedComponent() {
   const services = useMemo(
     () => products.flatMap((product) => product.services.map((service) => ({ ...service, product: product.name }))),
     [products]
+  );
+
+  const serviceName = useCallback(
+    (serviceId: string, productId: string) => {
+      return productsData?.products.find((p) => p.name === productId)?.services.find((s) => s.name === serviceId)
+        ?.displayName;
+    },
+    [productsData]
   );
 
   // Filter incidents based on selections
@@ -243,7 +251,7 @@ function FeedComponent() {
                           className="cursor-pointer"
                           onClick={() => toggleService(service, product)}
                         >
-                          {service} ({product}) ×
+                          {serviceName(service, product)} ({product}) ×
                         </Badge>
                       );
                     })}
