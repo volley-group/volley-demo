@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { AppNavbar } from '@/components/app-navbar';
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -68,14 +67,6 @@ function FeedComponent() {
   const services = useMemo(
     () => products.flatMap((product) => product.services.map((service) => ({ ...service, product: product.name }))),
     [products]
-  );
-
-  const serviceName = useCallback(
-    (serviceId: string, productId: string) => {
-      return productsData?.products.find((p) => p.name === productId)?.services.find((s) => s.name === serviceId)
-        ?.displayName;
-    },
-    [productsData]
   );
 
   // Filter incidents based on selections
@@ -226,38 +217,6 @@ function FeedComponent() {
                   </div>
                 </ScrollArea>
               </div>
-
-              {/* Active Filters */}
-              {(selectedProducts.size > 0 || selectedServices.size > 0) && (
-                <div className="space-y-2 flex-shrink-0">
-                  <Label>Active Filters</Label>
-                  <div className="flex flex-wrap gap-1">
-                    {Array.from(selectedProducts).map((product) => (
-                      <Badge
-                        key={product}
-                        variant="secondary"
-                        className="cursor-pointer"
-                        onClick={() => toggleProduct(product)}
-                      >
-                        {product} ×
-                      </Badge>
-                    ))}
-                    {Array.from(selectedServices).map((compositeKey) => {
-                      const [product, service] = compositeKey.split(':');
-                      return (
-                        <Badge
-                          key={compositeKey}
-                          variant="secondary"
-                          className="cursor-pointer"
-                          onClick={() => toggleService(service, product)}
-                        >
-                          {serviceName(service, product)} ({product}) ×
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
