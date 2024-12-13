@@ -1,4 +1,4 @@
-import type { ClassifiedMessage, IService, RSSFeed, StatusMessage } from '../types';
+import type { IService, RSSFeed, StatusMessage } from '../types';
 import { ProductFeed } from '../product';
 import Parser from 'rss-parser';
 

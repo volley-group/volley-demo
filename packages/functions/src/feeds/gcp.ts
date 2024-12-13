@@ -1,6 +1,5 @@
-import type { ClassifiedMessage, IService, RSSFeed, StatusMessage } from '../types';
+import type { ClassifiedMessage, IService, StatusMessage } from '../types';
 import { ProductFeed } from '../product';
-import Parser from 'rss-parser';
 
 interface GCPStatusMessage extends StatusMessage {
   affected_products: { title: string; id: string }[];
