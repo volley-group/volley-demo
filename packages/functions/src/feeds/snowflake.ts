@@ -5,7 +5,7 @@ import Parser from 'rss-parser';
 export class Snowflake extends ProductFeed<StatusMessage> {
   name = 'snowflake';
   displayName = 'Snowflake';
-  logo = 'https://logos-world.net/wp-content/uploads/2022/11/Snowflake-Symbol.png';
+  logo = 'https://companieslogo.com/img/orig/SNOW-35164165.png?t=1720244494';
 
   feedUrl = 'https://status.snowflake.com/history.rss';
 

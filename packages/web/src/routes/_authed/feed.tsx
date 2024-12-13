@@ -66,7 +66,10 @@ function FeedComponent() {
 
   const messages = useMemo(() => messagesData?.messages || [], [messagesData]);
   const products = useMemo(() => productsData?.products || [], [productsData]);
-  const services = useMemo(() => products.flatMap((product) => product.services), [products]);
+  const services = useMemo(
+    () => products.flatMap((product) => product.services.map((service) => ({ ...service, product: product.name }))),
+    [products]
+  );
   // Filter incidents based on selections
   const filteredIncidents = useMemo(() => {
     return messages.filter((message) => {
@@ -85,8 +88,12 @@ function FeedComponent() {
 
   // Filter services based on search
   const filteredServices = useMemo(() => {
-    return services.filter((service) => service.displayName.toLowerCase().includes(serviceSearchQuery.toLowerCase()));
-  }, [services, serviceSearchQuery]);
+    return services.filter(
+      (service) =>
+        (selectedProducts.size === 0 || selectedProducts.has(service.product)) &&
+        service.displayName.toLowerCase().includes(serviceSearchQuery.toLowerCase())
+    );
+  }, [services, serviceSearchQuery, selectedProducts]);
 
   // Add products filter
   const filteredProducts = useMemo(() => {
@@ -133,112 +140,108 @@ function FeedComponent() {
             <MessageFeed messages={filteredIncidents} />
           </div>
 
-          <div className="w-64 shrink-0">
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-              <div className="flex flex-col space-y-1.5 p-4">
-                <h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
-                  <Filter className="h-4 w-4" />
-                  Filters
-                </h3>
+          <div className="sticky top-20 w-64 shrink-0 rounded-lg border bg-card text-card-foreground shadow-sm max-h-[calc(100vh-6rem)] flex flex-col">
+            <div className="flex flex-col space-y-1.5 p-4">
+              <h3 className="flex items-center gap-2 font-semibold leading-none tracking-tight">
+                <Filter className="h-4 w-4" />
+                Filters
+              </h3>
+            </div>
+            <Separator />
+            <div className="p-4 flex flex-col flex-1 space-y-4 overflow-hidden">
+              {/* Search */}
+              <div className="space-y-2">
+                <Label htmlFor="search">Search</Label>
+                <Input
+                  id="search"
+                  placeholder="Search incidents..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
-              <Separator />
-              <div className="p-4">
-                <div className="space-y-4">
-                  {/* Search */}
-                  <div className="space-y-2">
-                    <Label htmlFor="search">Search</Label>
-                    <Input
-                      id="search"
-                      placeholder="Search incidents..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
 
-                  {/* Products */}
-                  <div className="space-y-2">
-                    <Label>Products</Label>
-                    <Input
-                      placeholder="Search products..."
-                      value={productSearchQuery}
-                      onChange={(e) => setProductSearchQuery(e.target.value)}
-                      className="mb-2"
-                    />
-                    <ScrollArea className="h-[120px] rounded-md border">
-                      <div className="space-y-1 p-2">
-                        {filteredProducts.map((product) => (
-                          <button
-                            key={product.name}
-                            onClick={() => toggleProduct(product.name)}
-                            className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
-                              selectedProducts.has(product.name) ? 'bg-gray-100' : ''
-                            }`}
-                          >
-                            {product.displayName}
-                            {selectedProducts.has(product.name) && <Check className="h-4 w-4" />}
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
+              {/* Products */}
+              <div className="space-y-2 flex-shrink-0">
+                <Label>Products</Label>
+                <Input
+                  placeholder="Search products..."
+                  value={productSearchQuery}
+                  onChange={(e) => setProductSearchQuery(e.target.value)}
+                  className="mb-2"
+                />
+                <ScrollArea className="rounded-md border">
+                  <div className="space-y-1 p-2">
+                    {filteredProducts.map((product) => (
+                      <button
+                        key={product.name}
+                        onClick={() => toggleProduct(product.name)}
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
+                          selectedProducts.has(product.name) ? 'bg-gray-100' : ''
+                        }`}
+                      >
+                        {product.displayName}
+                        {selectedProducts.has(product.name) && <Check className="h-4 w-4" />}
+                      </button>
+                    ))}
                   </div>
+                </ScrollArea>
+              </div>
 
-                  {/* Services */}
-                  <div className="space-y-2">
-                    <Label>Services</Label>
-                    <Input
-                      placeholder="Search services..."
-                      value={serviceSearchQuery}
-                      onChange={(e) => setServiceSearchQuery(e.target.value)}
-                      className="mb-2"
-                    />
-                    <ScrollArea className="h-[120px] rounded-md border">
-                      <div className="space-y-1 p-2">
-                        {filteredServices.map((service) => (
-                          <button
-                            key={service.displayName}
-                            onClick={() => toggleService(service.displayName)}
-                            className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
-                              selectedServices.has(service.displayName) ? 'bg-gray-100' : ''
-                            }`}
-                          >
-                            {service.displayName}
-                            {selectedServices.has(service.displayName) && <Check className="h-4 w-4" />}
-                          </button>
-                        ))}
-                      </div>
-                    </ScrollArea>
+              {/* Services */}
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+                <Label>Services</Label>
+                <Input
+                  placeholder="Search services..."
+                  value={serviceSearchQuery}
+                  onChange={(e) => setServiceSearchQuery(e.target.value)}
+                  className="mb-2"
+                />
+                <ScrollArea className="flex-1 rounded-md border">
+                  <div className="space-y-1 p-2">
+                    {filteredServices.map((service) => (
+                      <button
+                        key={service.displayName}
+                        onClick={() => toggleService(service.displayName)}
+                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
+                          selectedServices.has(service.displayName) ? 'bg-gray-100' : ''
+                        }`}
+                      >
+                        {service.displayName}
+                        {selectedServices.has(service.displayName) && <Check className="h-4 w-4" />}
+                      </button>
+                    ))}
                   </div>
+                </ScrollArea>
+              </div>
 
-                  {/* Active Filters */}
-                  {(selectedProducts.size > 0 || selectedServices.size > 0) && (
-                    <div className="space-y-2">
-                      <Label>Active Filters</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {Array.from(selectedProducts).map((product) => (
-                          <Badge
-                            key={product}
-                            variant="secondary"
-                            className="cursor-pointer"
-                            onClick={() => toggleProduct(product)}
-                          >
-                            {product} ×
-                          </Badge>
-                        ))}
-                        {Array.from(selectedServices).map((service) => (
-                          <Badge
-                            key={service}
-                            variant="secondary"
-                            className="cursor-pointer"
-                            onClick={() => toggleService(service)}
-                          >
-                            {service} ×
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              {/* Active Filters */}
+              {(selectedProducts.size > 0 || selectedServices.size > 0) && (
+                <div className="space-y-2 flex-shrink-0">
+                  <Label>Active Filters</Label>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from(selectedProducts).map((product) => (
+                      <Badge
+                        key={product}
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => toggleProduct(product)}
+                      >
+                        {product} ×
+                      </Badge>
+                    ))}
+                    {Array.from(selectedServices).map((service) => (
+                      <Badge
+                        key={service}
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => toggleService(service)}
+                      >
+                        {service} ×
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
