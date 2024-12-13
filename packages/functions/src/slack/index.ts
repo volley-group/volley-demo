@@ -141,5 +141,8 @@ export async function formatSlackMessage(message: ClassifiedMessage, productName
     blocks,
     // Add a fallback text for notifications
     text: `${displayName} Status Update: ${message.title}`,
+    // Add the product's logo as the icon URL
+    icon_url: product?.logo,
+    username: `${displayName} Status`,
   };
 }
