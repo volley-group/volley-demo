@@ -1,5 +1,9 @@
 # Mesa
 
+Unify and filter Slack alerts for external vendors. Many products provide an RSS feed or slack bot for their entire platform but often fail to provide separate feeds or any filtering mechanism for just specific services in their platform. This can leave you with an #ops channel that is flooded with alerts for obscure GitHub or GCP services that you do not use nor care about. [Mesa](https://usebraid.com) allows you to subscribe to products status page feeds and filter the messages for specific services.
+
+This project is self-hostable but you can also use the [hosted version](https://app.usebraid.com/sign-up) for free.
+
 ## Stack
 
 - We use [SST](https://sst.dev/docs/) to orchestrate our infrastructure and manage most of our environment variables.
