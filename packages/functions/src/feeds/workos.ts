@@ -5,7 +5,7 @@ import Parser from 'rss-parser';
 export class WorkOS extends ProductFeed<StatusMessage> {
   name = 'workos';
   displayName = 'WorkOS';
-  logo = 'https://cdn.brandfetch.io/idOegYOz05/theme/dark/symbol.svg?c=1bfwsmEH20zzEfSNTed';
+  logo = 'https://seeklogo.com/images/W/workos-icon-logo-4D02E60A6C-seeklogo.com.png';
 
   feedUrl = 'https://status.workos.com/history.rss';
 
