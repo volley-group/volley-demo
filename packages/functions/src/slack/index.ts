@@ -44,6 +44,19 @@ function getStatusEmoji(title: string): string {
   return '🔔';
 }
 
+type Block = {
+  type?: string;
+  text?: {
+    type: string;
+    text?: string;
+    emoji?: boolean;
+  };
+  elements?: {
+    type: string;
+    text?: string;
+  }[];
+};
+
 export async function formatSlackMessage(message: ClassifiedMessage, productName: string) {
   const formattedContent = convertToSlackFormat(message.content);
   const statusEmoji = getStatusEmoji(message.title);
@@ -62,7 +75,7 @@ export async function formatSlackMessage(message: ClassifiedMessage, productName
   // Split content into chunks if needed (3000 char limit)
   const chunks = formattedContent.match(/[\s\S]{1,3000}/g) || [];
 
-  const blocks = [
+  const blocks: Block[] = [
     {
       type: 'header',
       text: {
