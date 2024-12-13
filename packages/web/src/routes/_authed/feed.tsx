@@ -40,30 +40,6 @@ function FeedComponent() {
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
 
-  // Extract unique products and services
-  // const { products, services } = useMemo(() => {
-  //   const productsSet = new Set(messages.map((message) => message.product));
-
-  //   // Create services with product context
-  //   const servicesWithContext: ServiceWithContext[] = messages.flatMap((message) =>
-  //     message.affectedServices.map((service) => ({
-  //       name: service,
-  //       product: message.product,
-  //       displayName: `${message.product} - ${service}`,
-  //     }))
-  //   );
-
-  //   // Remove duplicates by creating a Map with displayName as key
-  //   const uniqueServices = Array.from(
-  //     new Map(servicesWithContext.map((service) => [service.displayName, service])).values()
-  //   ).sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-  //   return {
-  //     products: Array.from(productsSet),
-  //     services: uniqueServices,
-  //   };
-  // }, [messages]);
-
   const messages = useMemo(() => messagesData?.messages || [], [messagesData]);
   const products = useMemo(() => productsData?.products || [], [productsData]);
   const services = useMemo(
@@ -75,8 +51,7 @@ function FeedComponent() {
     return messages.filter((message) => {
       const matchesProduct = selectedProducts.size === 0 || selectedProducts.has(message.product);
       const matchesService =
-        selectedServices.size === 0 ||
-        message.affectedServices.some((service) => selectedServices.has(`${message.product} - ${service}`));
+        selectedServices.size === 0 || message.affectedServices.some((service) => selectedServices.has(service));
       const matchesSearch =
         searchQuery === '' ||
         message.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -110,12 +85,12 @@ function FeedComponent() {
     setSelectedProducts(newSelected);
   };
 
-  const toggleService = (serviceDisplayName: string) => {
+  const toggleService = (serviceName: string) => {
     const newSelected = new Set(selectedServices);
-    if (newSelected.has(serviceDisplayName)) {
-      newSelected.delete(serviceDisplayName);
+    if (newSelected.has(serviceName)) {
+      newSelected.delete(serviceName);
     } else {
-      newSelected.add(serviceDisplayName);
+      newSelected.add(serviceName);
     }
     setSelectedServices(newSelected);
   };
@@ -175,10 +150,9 @@ function FeedComponent() {
                       <button
                         key={product.name}
                         onClick={() => toggleProduct(product.name)}
-                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
-                          selectedProducts.has(product.name) ? 'bg-gray-100' : ''
-                        }`}
+                        className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
+                        <img src={product.logo} alt={product.name} className="h-4 w-4 shrink-0" />
                         {product.displayName}
                         {selectedProducts.has(product.name) && <Check className="h-4 w-4" />}
                       </button>
@@ -200,14 +174,17 @@ function FeedComponent() {
                   <div className="space-y-1 p-2">
                     {filteredServices.map((service) => (
                       <button
-                        key={service.displayName}
-                        onClick={() => toggleService(service.displayName)}
-                        className={`flex w-full items-center justify-between rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900 ${
-                          selectedServices.has(service.displayName) ? 'bg-gray-100' : ''
-                        }`}
+                        key={service.name}
+                        onClick={() => toggleService(service.name)}
+                        className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
-                        {service.displayName}
-                        {selectedServices.has(service.displayName) && <Check className="h-4 w-4" />}
+                        <img
+                          src={products.find((p) => p.name === service.product)!.logo}
+                          alt={service.product}
+                          className="h-4 w-4 shrink-0"
+                        />
+                        <span className="flex-1 text-left">{service.displayName}</span>
+                        {selectedServices.has(service.name) && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     ))}
                   </div>
