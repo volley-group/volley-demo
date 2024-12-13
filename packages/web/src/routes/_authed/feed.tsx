@@ -163,7 +163,7 @@ function FeedComponent() {
               </div>
 
               {/* Products */}
-              <div className="space-y-2 flex-shrink-0">
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
                 <Label>Products</Label>
                 <Input
                   placeholder="Search products..."
@@ -171,7 +171,7 @@ function FeedComponent() {
                   onChange={(e) => setProductSearchQuery(e.target.value)}
                   className="mb-2"
                 />
-                <ScrollArea className="rounded-md border">
+                <ScrollArea className="flex-1 rounded-md border">
                   <div className="space-y-1 p-2">
                     {filteredProducts.map((product) => (
                       <button
@@ -180,8 +180,8 @@ function FeedComponent() {
                         className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
                         <img src={product.logo} alt={product.name} className="h-4 w-4 shrink-0" />
-                        {product.displayName}
-                        {selectedProducts.has(product.name) && <Check className="h-4 w-4" />}
+                        <span className="flex-1 text-left">{product.displayName}</span>
+                        {selectedProducts.has(product.name) && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     ))}
                   </div>
