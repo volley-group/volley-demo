@@ -59,10 +59,10 @@ export abstract class ProductFeed<T extends StatusMessage> implements IProductFe
       And this content: "${message.content}"
       And this list of available services: ${availableServiceNames.join(', ')}
       Please return only the names of services that are likely affected by this status message.
-      Return the response as a JSON array of strings with this type: { affectedServices: {'${availableServiceNames.join("' | '")}'}[] }. If none of the given services are likely affected, return an empty array.`;
+      Return the response as a JSON array of strings. If none of the given services are likely affected, return an empty array.`;
 
     const affectedServicesSchema = z.object({
-      affectedServices: z.array(z.string()),
+      affectedServices: z.array(z.enum(['unknown', ...availableServiceNames])),
     });
     console.log('calling openai');
     const chatCompletion = await openai.beta.chat.completions.parse({

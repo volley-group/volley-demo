@@ -2,7 +2,9 @@ import type { ClassifiedMessage, IService, RSSFeed, StatusMessage } from '../typ
 import { ProductFeed } from '../product';
 import Parser from 'rss-parser';
 
-interface GCPStatusMessage extends StatusMessage {}
+interface GCPStatusMessage extends StatusMessage {
+  affected_products: { title: string; id: string }[];
+}
 
 interface GCPIncident {
   id: string;
@@ -40,12 +42,22 @@ export class GCP extends ProductFeed<GCPStatusMessage> {
     const incidents = (await response.json()) as GCPIncident[];
     const messages = incidents.flatMap((incident) =>
       incident.updates.map((update) => ({
-        guid: incident.id,
+        guid: `${incident.id}-${update.created}`,
         title: incident.external_desc,
         content: update.text,
         pubDate: update.created,
+        affected_products: incident.affected_products,
       }))
     );
-    return messages;
+    return messages.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()).slice(0, 10);
+  }
+
+  async classifyMessage(message: GCPStatusMessage): Promise<ClassifiedMessage> {
+    const affectedServices = message.affected_products.map((product) => product.id);
+    return {
+      ...message,
+      product: this.name,
+      affectedServices,
+    };
   }
 }

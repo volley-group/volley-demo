@@ -1,10 +1,10 @@
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ClassifiedMessage } from '@braid/functions/types';
-import { useQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { hc } from '@/lib/clients';
 import { Skeleton } from '../ui/skeleton';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Badge } from '../ui/badge';
 
 export function MessageCard({ message }: { message: ClassifiedMessage }) {
@@ -23,6 +23,14 @@ export function MessageCard({ message }: { message: ClassifiedMessage }) {
     queryKey: ['products'],
     queryFn: () => hc['products'].$get().then((r) => r.json()),
   });
+
+  const serviceName = useCallback(
+    (serviceId: string) => {
+      return data?.products.find((p) => p.name === message.product)?.services.find((s) => s.name === serviceId)
+        ?.displayName;
+    },
+    [data, message.product]
+  );
 
   if (isLoading || !data) {
     return (
@@ -83,7 +91,7 @@ export function MessageCard({ message }: { message: ClassifiedMessage }) {
           <div className="flex items-center gap-2">
             {message.affectedServices.map((service) => (
               <Badge key={service} variant="secondary" className="pointer-events-none px-3 py-1 capitalize shadow-sm">
-                {service}
+                {serviceName(service)}
               </Badge>
             ))}
           </div>
