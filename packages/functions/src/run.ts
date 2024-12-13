@@ -24,7 +24,7 @@ export async function handler() {
     },
     Promise.resolve({} as Record<string, ClassifiedMessage[]>)
   );
-
+  console.log(`Fetched ${Object.keys(newMessages).length} messages`);
   // Notify relevant slack apps
   for (const [product, messages] of Object.entries(newMessages)) {
     console.log(`[${new Date().toISOString()}] Notifying users for ${product} of ${messages.length} new messages`);
