@@ -188,81 +188,79 @@ function ConfigComponent() {
               className="max-w-md"
             />
 
-            <ScrollArea className="h-[calc(100vh-300px)]">
-              <div className="space-y-4">
-                {filteredProducts!.map((product) => (
-                  <Collapsible
-                    key={product.name}
-                    open={expandedProducts.has(product.name)}
-                    onOpenChange={() => toggleProduct(product.name)}
-                  >
-                    <Card className="overflow-hidden">
-                      <CollapsibleTrigger className="w-full text-left">
-                        <CardHeader className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <img src={product.logo} alt={`${product.name} logo`} className="h-8 w-8 rounded-md" />
-                              <h3 className="text-xl font-semibold">{product.displayName}</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {trackedServiceCount(product) > 0 && (
-                                <Badge variant="outline">{`${trackedServiceCount(product)} tracked`}</Badge>
-                              )}
-                              {expandedProducts.has(product.name) ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </div>
+            <div className="space-y-4">
+              {filteredProducts!.map((product) => (
+                <Collapsible
+                  key={product.name}
+                  open={expandedProducts.has(product.name)}
+                  onOpenChange={() => toggleProduct(product.name)}
+                >
+                  <Card className="overflow-hidden">
+                    <CollapsibleTrigger className="w-full text-left">
+                      <CardHeader className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <img src={product.logo} alt={`${product.name} logo`} className="h-8 w-8 rounded-md" />
+                            <h3 className="text-xl font-semibold">{product.displayName}</h3>
                           </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
+                          <div className="flex items-center gap-2">
+                            {trackedServiceCount(product) > 0 && (
+                              <Badge variant="outline">{`${trackedServiceCount(product)} tracked`}</Badge>
+                            )}
+                            {expandedProducts.has(product.name) ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
 
-                      <CollapsibleContent>
-                        <CardContent className="p-0">
-                          <div className="px-6 py-2">
-                            <Input
-                              placeholder={`Search ${product.name} products...`}
-                              value={serviceSearchQueries[product.name] || ''}
-                              onChange={(e) => handleServiceSearch(product.name, e.target.value)}
-                              className="w-full"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                          <div className="divide-y">
-                            {filteredServices(product).map((service) => {
-                              const isEnabled = productServiceIsEnabled(product.name, service.name);
-                              return (
-                                <div
-                                  key={service.name}
-                                  className={cn(
-                                    'flex w-full items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50',
-                                    isEnabled && 'bg-secondary'
-                                  )}
-                                  // onClick={() => toggleService(product.name, service.name)}
-                                >
-                                  <div className="flex items-center gap-3">
-                                    <span className="font-medium">{service.displayName}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Switch
-                                      checked={isEnabled}
-                                      onCheckedChange={() => toggleService(product.name, service.name)}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="data-[state=checked]:bg-primary"
-                                    />
-                                  </div>
+                    <CollapsibleContent>
+                      <CardContent className="p-0">
+                        <div className="px-6 py-2">
+                          <Input
+                            placeholder={`Search ${product.name} products...`}
+                            value={serviceSearchQueries[product.name] || ''}
+                            onChange={(e) => handleServiceSearch(product.name, e.target.value)}
+                            className="w-full"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        <div className="divide-y">
+                          {filteredServices(product).map((service) => {
+                            const isEnabled = productServiceIsEnabled(product.name, service.name);
+                            return (
+                              <div
+                                key={service.name}
+                                className={cn(
+                                  'flex w-full items-center justify-between px-6 py-4 transition-colors hover:bg-secondary/50',
+                                  isEnabled && 'bg-secondary'
+                                )}
+                                // onClick={() => toggleService(product.name, service.name)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="font-medium">{service.displayName}</span>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Card>
-                  </Collapsible>
-                ))}
-              </div>
-            </ScrollArea>
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    checked={isEnabled}
+                                    onCheckedChange={() => toggleService(product.name, service.name)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="data-[state=checked]:bg-primary"
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              ))}
+            </div>
           </div>
         </div>
       </main>

@@ -40,3 +40,8 @@ CLOUDFLARE_API_TOKEN=
 You can validate your secrets are set by running `pnpm sst secret list`
 
 11. Run project locally `pnpm run dev`
+
+## Roadmap
+
+- [ ] Represent and filter certain product services by region
+- [ ] Handle multiple Slack orgs
