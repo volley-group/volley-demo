@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { AppNavbar } from '@/components/app-navbar';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,18 +21,25 @@ const productsQuery = queryOptions({
   queryFn: () => hc['products'].$get().then((r) => r.json()),
 });
 
+const configsQuery = queryOptions({
+  queryKey: ['configs'],
+  queryFn: () => hc['configs'].$get().then((r) => r.json()),
+});
+
 export const Route = createFileRoute('/_authed/feed')({
   component: FeedComponent,
   loader: ({ context: { queryClient } }) => {
     queryClient.ensureQueryData(messagesQuery);
     queryClient.ensureQueryData(productsQuery);
+    queryClient.ensureQueryData(configsQuery);
   },
   preload: true,
 });
 
 function FeedComponent() {
-  const { data: messagesData } = useQuery(messagesQuery);
-  const { data: productsData } = useQuery(productsQuery);
+  const { data: messagesData, isLoading: isLoadingMessages } = useQuery(messagesQuery);
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery(productsQuery);
+  const { data: configsData, isLoading: isLoadingConfigs } = useQuery(configsQuery);
 
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
@@ -40,18 +47,38 @@ function FeedComponent() {
   const [serviceSearchQuery, setServiceSearchQuery] = useState('');
   const [productSearchQuery, setProductSearchQuery] = useState('');
 
+  // Initialize filters from configs when data is loaded
+  useEffect(() => {
+    if (configsData?.configs) {
+      const products = new Set<string>();
+      const services = new Set<string>();
+      
+      configsData.configs.forEach((config) => {
+        products.add(config.product);
+        config.services.forEach((service) => services.add(`${config.product}:${service}`));
+      });
+
+      setSelectedProducts(products);
+      setSelectedServices(services);
+    }
+  }, [configsData]);
+
   const messages = useMemo(() => messagesData?.messages || [], [messagesData]);
   const products = useMemo(() => productsData?.products || [], [productsData]);
   const services = useMemo(
     () => products.flatMap((product) => product.services.map((service) => ({ ...service, product: product.name }))),
     [products]
   );
+
   // Filter incidents based on selections
   const filteredIncidents = useMemo(() => {
     return messages.filter((message) => {
       const matchesProduct = selectedProducts.size === 0 || selectedProducts.has(message.product);
       const matchesService =
-        selectedServices.size === 0 || message.affectedServices.some((service) => selectedServices.has(service));
+        selectedServices.size === 0 || 
+        message.affectedServices.some((service) => 
+          selectedServices.has(`${message.product}:${service}`)
+        );
       const matchesSearch =
         searchQuery === '' ||
         message.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -70,7 +97,7 @@ function FeedComponent() {
     );
   }, [services, serviceSearchQuery, selectedProducts]);
 
-  // Add products filter
+  // Filter products based on search
   const filteredProducts = useMemo(() => {
     return products.filter((product) => product.displayName.toLowerCase().includes(productSearchQuery.toLowerCase()));
   }, [products, productSearchQuery]);
@@ -85,17 +112,18 @@ function FeedComponent() {
     setSelectedProducts(newSelected);
   };
 
-  const toggleService = (serviceName: string) => {
+  const toggleService = (serviceName: string, productName: string) => {
+    const compositeKey = `${productName}:${serviceName}`;
     const newSelected = new Set(selectedServices);
-    if (newSelected.has(serviceName)) {
-      newSelected.delete(serviceName);
+    if (newSelected.has(compositeKey)) {
+      newSelected.delete(compositeKey);
     } else {
-      newSelected.add(serviceName);
+      newSelected.add(compositeKey);
     }
     setSelectedServices(newSelected);
   };
 
-  if (!messagesData || !productsData) {
+  if (isLoadingMessages || isLoadingProducts || isLoadingConfigs) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -175,7 +203,7 @@ function FeedComponent() {
                     {filteredServices.map((service) => (
                       <button
                         key={`${service.product}-${service.name}`}
-                        onClick={() => toggleService(service.name)}
+                        onClick={() => toggleService(service.name, service.product)}
                         className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
                         <img
@@ -184,7 +212,7 @@ function FeedComponent() {
                           className="h-4 w-4 shrink-0"
                         />
                         <span className="flex-1 text-left">{service.displayName}</span>
-                        {selectedServices.has(service.name) && <Check className="h-4 w-4 shrink-0" />}
+                        {selectedServices.has(`${service.product}:${service.name}`) && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     ))}
                   </div>
@@ -206,16 +234,19 @@ function FeedComponent() {
                         {product} ×
                       </Badge>
                     ))}
-                    {Array.from(selectedServices).map((service) => (
-                      <Badge
-                        key={service}
-                        variant="secondary"
-                        className="cursor-pointer"
-                        onClick={() => toggleService(service)}
-                      >
-                        {service} ×
-                      </Badge>
-                    ))}
+                    {Array.from(selectedServices).map((compositeKey) => {
+                      const [product, service] = compositeKey.split(':');
+                      return (
+                        <Badge
+                          key={compositeKey}
+                          variant="secondary"
+                          className="cursor-pointer"
+                          onClick={() => toggleService(service, product)}
+                        >
+                          {service} ({product}) ×
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
