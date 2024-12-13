@@ -6,6 +6,7 @@ import { GitHub } from './github';
 import { OpenAI } from './openai';
 import { SendGrid } from './sendgrid';
 import { Snowflake } from './snowflake';
+import { Stripe } from './stripe';
 import { Temporal } from './temporal';
 
 export default [
@@ -18,4 +19,5 @@ export default [
   new OpenAI(),
   new Temporal(),
   new Census(),
+  new Stripe(),
 ];
