@@ -119,11 +119,13 @@ function ConfigComponent() {
     () =>
       loadingProducts
         ? []
-        : productsData?.products.filter(
-            (product) =>
-              product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              product.services.some((service) => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          ),
+        : productsData?.products
+            .filter(
+              (product) =>
+                product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                product.services.some((service) => service.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            )
+            .sort((a, b) => a.name.localeCompare(b.name)),
     [productsData, searchQuery, loadingProducts]
   );
 

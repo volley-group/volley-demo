@@ -12,7 +12,6 @@ import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } fr
 import { authenticatedMiddleware, clerkMiddleware } from './middleware';
 import { and, eq, getTableColumns, inArray } from 'drizzle-orm';
 import feeds from '../feeds';
-import type { IService } from '../types';
 
 const api = new Hono()
   .get('/ping', async (c) => {
