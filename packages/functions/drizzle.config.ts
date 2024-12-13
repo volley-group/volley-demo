@@ -7,7 +7,7 @@ export default defineConfig({
   out: './src/drizzle/migrations',
   verbose: true,
   dbCredentials: {
-    ssl: false,
+    ssl: Resource.Config.LIVE ? false : true,
     host: Resource.Database.host,
     port: Resource.Database.port,
     user: Resource.Database.username,

@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as SignedInImport } from './routes/signed-in'
 import { Route as SignOutImport } from './routes/sign-out'
 import { Route as AuthedImport } from './routes/_authed'
+import { Route as IndexImport } from './routes/index'
 import { Route as SlackInstallImport } from './routes/slack.install'
 import { Route as SignUpSplatImport } from './routes/sign-up.$'
 import { Route as SignInSplatImport } from './routes/sign-in.$'
@@ -36,6 +37,12 @@ const SignOutRoute = SignOutImport.update({
 
 const AuthedRoute = AuthedImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const IndexRoute = IndexImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -73,6 +80,13 @@ const AuthedConfigRoute = AuthedConfigImport.update({
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -148,6 +162,7 @@ const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '': typeof AuthedRouteWithChildren
   '/sign-out': typeof SignOutRoute
   '/signed-in': typeof SignedInRoute
@@ -159,6 +174,7 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '': typeof AuthedRouteWithChildren
   '/sign-out': typeof SignOutRoute
   '/signed-in': typeof SignedInRoute
@@ -171,6 +187,7 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
+  '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/sign-out': typeof SignOutRoute
   '/signed-in': typeof SignedInRoute
@@ -184,6 +201,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | ''
     | '/sign-out'
     | '/signed-in'
@@ -194,6 +212,7 @@ export interface FileRouteTypes {
     | '/slack/install'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | ''
     | '/sign-out'
     | '/signed-in'
@@ -204,6 +223,7 @@ export interface FileRouteTypes {
     | '/slack/install'
   id:
     | '__root__'
+    | '/'
     | '/_authed'
     | '/sign-out'
     | '/signed-in'
@@ -216,6 +236,7 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   SignOutRoute: typeof SignOutRoute
   SignedInRoute: typeof SignedInRoute
@@ -225,6 +246,7 @@ export interface RootRouteChildren {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   SignOutRoute: SignOutRoute,
   SignedInRoute: SignedInRoute,
@@ -243,6 +265,7 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/",
         "/_authed",
         "/sign-out",
         "/signed-in",
@@ -250,6 +273,9 @@ export const routeTree = rootRoute
         "/sign-up/$",
         "/slack/install"
       ]
+    },
+    "/": {
+      "filePath": "index.ts"
     },
     "/_authed": {
       "filePath": "_authed.tsx",

@@ -63,7 +63,7 @@ const api = new Hono()
         console.error('Failed to join channel', joinResponse.error);
       }
       console.log('Joined channel', joinResponse);
-      const redirectUrl = Resource.Config.PERMANENT_STAGE ? '/feed' : 'http://localhost:5173/feed';
+      const redirectUrl = Resource.Config.PERMANENT_STAGE ? '/config' : 'http://localhost:5173/config';
       return c.redirect(redirectUrl);
     }
   )

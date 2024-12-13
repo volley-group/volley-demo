@@ -8,6 +8,7 @@ import { SendGrid } from './sendgrid';
 import { Snowflake } from './snowflake';
 import { Stripe } from './stripe';
 import { Temporal } from './temporal';
+import { WorkOS } from './workos';
 
 export default [
   new GitHub(),
@@ -20,4 +21,5 @@ export default [
   new Temporal(),
   new Census(),
   new Stripe(),
+  new WorkOS(),
 ];

@@ -71,6 +71,7 @@ export default $config({
         PERMANENT_STAGE: isPermanentStage,
         VITE_CLERK_PUBLISHABLE_KEY: clerkPublicKey.value,
         DOMAIN: domain,
+        LIVE: $dev,
       },
     });
 
@@ -85,7 +86,7 @@ export default $config({
           allowCredentials: true,
         },
       },
-      // vpc,
+      vpc,
     });
 
     const webApp = new sst.aws.StaticSite(`Web`, {
