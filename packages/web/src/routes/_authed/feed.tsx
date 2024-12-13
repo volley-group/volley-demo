@@ -174,7 +174,7 @@ function FeedComponent() {
                   <div className="space-y-1 p-2">
                     {filteredServices.map((service) => (
                       <button
-                        key={service.name}
+                        key={`${service.product}-${service.name}`}
                         onClick={() => toggleService(service.name)}
                         className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
                       >
