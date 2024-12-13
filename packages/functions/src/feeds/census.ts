@@ -5,7 +5,7 @@ import Parser from 'rss-parser';
 export class Census extends ProductFeed<StatusMessage> {
   name = 'census';
   displayName = 'Census';
-  logo = 'https://dka575ofm4ao0.cloudfront.net/pages-transactional_logos/retina/206188/census_logo_full.png';
+  logo = 'https://images.crunchbase.com/image/upload/c_pad,f_auto,q_auto:eco,dpr_1/llmjpn8a0pgu8szjmnyi';
 
   feedUrl = 'https://status.getcensus.com/history.rss';
 

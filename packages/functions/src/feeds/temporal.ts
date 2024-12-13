@@ -5,8 +5,7 @@ import Parser from 'rss-parser';
 export class Temporal extends ProductFeed<StatusMessage> {
   name = 'temporal';
   displayName = 'Temporal';
-  logo =
-    'https://dka575ofm4ao0.cloudfront.net/pages-transactional_logos/retina/258979/Temporal_LogoLockup_Horizontal_dark.png';
+  logo = 'https://marketplace-assets.digitalocean.com/logos/temporal.png';
 
   feedUrl = 'https://status.temporal.io/history.rss';
 
