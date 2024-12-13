@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import { hc, queryClient } from '@/lib/clients';
 import type { InferResponseType } from 'hono/client';
+import { Badge } from '@/components/ui/badge';
 
 const productsQuery = queryOptions({
   queryKey: ['products'],
@@ -97,6 +98,15 @@ function ConfigComponent() {
     [configsData?.configs, loadingConfigs]
   );
 
+  const trackedServiceCount = useCallback(
+    (product: InferResponseType<(typeof hc)['products']['$get']>['products'][0]) => {
+      return productsData
+        ? product.services.filter((service) => productServiceIsEnabled(product.name, service.name)).length
+        : 0;
+    },
+    [productsData]
+  );
+
   const toggleProduct = (productId: string) => {
     const newExpanded = new Set(expandedProducts);
     if (newExpanded.has(productId)) {
@@ -132,7 +142,9 @@ function ConfigComponent() {
   const filteredServices = useCallback(
     (product: InferResponseType<(typeof hc)['products']['$get']>['products'][0]) => {
       const serviceSearch = serviceSearchQueries[product.name] || '';
-      return product.services.filter((service) => service.name.toLowerCase().includes(serviceSearch.toLowerCase()));
+      return product.services
+        .filter((service) => service.name.toLowerCase().includes(serviceSearch.toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
     [serviceSearchQueries]
   );
@@ -192,11 +204,16 @@ function ConfigComponent() {
                               <img src={product.logo} alt={`${product.name} logo`} className="h-8 w-8 rounded-md" />
                               <h3 className="text-xl font-semibold">{product.displayName}</h3>
                             </div>
-                            {expandedProducts.has(product.name) ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
+                            <div className="flex items-center gap-2">
+                              {trackedServiceCount(product) > 0 && (
+                                <Badge variant="outline">{`${trackedServiceCount(product)} tracked`}</Badge>
+                              )}
+                              {expandedProducts.has(product.name) ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </div>
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>

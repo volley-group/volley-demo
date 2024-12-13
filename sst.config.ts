@@ -125,12 +125,15 @@ export default $config({
         vpc,
       });
 
-      new aws.lambda.Invocation(`DatabasePushInvocation`, {
-        functionName: databasePush.name,
-        input: JSON.stringify({
-          now: new Date().toISOString(),
-        }),
-      });
+      // new aws.lambda.Invocation(`DatabasePushInvocation`, {
+      //   functionName: databasePush.name,
+      //   input: JSON.stringify({
+      //     now: new Date().toISOString(),
+      //   }),
+      //   triggers: {
+      //     version: '1',
+      //   },
+      // });
     }
 
     new sst.x.DevCommand('Studio', {
