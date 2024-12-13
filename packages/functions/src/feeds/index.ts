@@ -1,4 +1,5 @@
 import { Anthropic } from './anthropic';
+import { Bubble } from './bubble';
 import { Census } from './census';
 import { DatadogUS1 } from './datadog-us1';
 import { GCP } from './gcp';
@@ -22,4 +23,5 @@ export default [
   new Census(),
   new Stripe(),
   new WorkOS(),
+  new Bubble(),
 ];
