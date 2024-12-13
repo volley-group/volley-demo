@@ -24,9 +24,8 @@ export default $config({
 
     const slackClientId = new sst.Secret(`SlackClientId`);
     const slackClientSecret = new sst.Secret(`SlackClientSecret`);
-    const slackSigningSecret = new sst.Secret(`SlackSigningSecret`);
     const clerkSecretKey = new sst.Secret(`ClerkSecretKey`);
-    const claudeApiKey = new sst.Secret(`ClaudeApiKey`);
+    const clerkPublicKey = new sst.Secret(`ClerkPublicKey`);
     const openaiApiKey = new sst.Secret(`OpenaiApiKey`);
 
     const vpc = isPermanentStage
@@ -70,14 +69,14 @@ export default $config({
     const config = new sst.Linkable('Config', {
       properties: {
         PERMANENT_STAGE: isPermanentStage,
-        VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y29udGVudC1tdWxlLTI4LmNsZXJrLmFjY291bnRzLmRldiQ',
+        VITE_CLERK_PUBLISHABLE_KEY: clerkPublicKey.value,
         DOMAIN: domain,
       },
     });
 
     const api = new sst.aws.Function(`API`, {
       handler: './packages/functions/src/api/index.handler',
-      link: [database, config, openaiApiKey, clerkSecretKey, slackClientId, slackClientSecret, slackSigningSecret],
+      link: [database, config, openaiApiKey, clerkSecretKey, slackClientId, slackClientSecret],
       url: {
         cors: {
           allowOrigins: ['*'],
@@ -92,11 +91,11 @@ export default $config({
     const webApp = new sst.aws.StaticSite(`Web`, {
       build: {
         command: 'pnpm --filter web run build',
-        output: 'dist',
+        output: './packages/web/dist',
       },
       dev: { command: 'pnpm --filter web run dev' },
       environment: {
-        VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y29udGVudC1tdWxlLTI4LmNsZXJrLmFjY291bnRzLmRldiQ',
+        VITE_CLERK_PUBLISHABLE_KEY: clerkPublicKey.value,
         VITE_STAGE: $app.stage,
       },
     });
@@ -104,7 +103,7 @@ export default $config({
     new sst.aws.Cron('StatusRunner', {
       job: {
         handler: 'packages/functions/src/run.handler',
-        link: [database, claudeApiKey, openaiApiKey, slackClientId, slackClientSecret, slackSigningSecret],
+        link: [database, openaiApiKey, slackClientId, slackClientSecret],
         vpc,
       },
       schedule: 'rate(1 minute)',
