@@ -55,7 +55,7 @@ export abstract class ProductFeed<T extends StatusMessage> implements IProductFe
     const services = await this.getServices();
     const availableServiceNames = services.map((service) => service.name);
 
-    const prompt = `Given this status message title: "${message.title}"
+    const prompt = `Given this ${this.name} status message title: "${message.title}"
       And this content: "${message.content}"
       And this list of available services: ${availableServiceNames.join(', ')}
       Please return only the names of services that are likely affected by this status message.
