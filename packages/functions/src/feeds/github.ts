@@ -2,7 +2,7 @@ import type { ClassifiedMessage, IService, RSSFeed, StatusMessage } from '../typ
 import { ProductFeed } from '../product';
 import Parser from 'rss-parser';
 
-export class GitHub extends ProductFeed {
+export class GitHub extends ProductFeed<StatusMessage> {
   name = 'github';
   displayName = 'GitHub';
   logo = 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';

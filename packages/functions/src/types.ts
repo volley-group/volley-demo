@@ -11,14 +11,12 @@ export interface IProductFeed {
   name: string;
   displayName: string;
   logo: string;
-  getServices: () => Promise<IService[]>;
-  getFeed: (latestMessage?: ClassifiedMessage) => Promise<StatusMessage[]>;
-  classifyMessage: (message: StatusMessage) => Promise<ClassifiedMessage>;
 }
 
 export interface IService {
   name: string;
   displayName: string;
+  feedUrl?: string;
 }
 
 export type StatusMessage = Omit<typeof StatusMessageTable.$inferSelect, 'product' | 'affectedServices'>;

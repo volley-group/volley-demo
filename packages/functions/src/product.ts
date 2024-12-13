@@ -3,22 +3,17 @@ import type { ClassifiedMessage, IService, StatusMessage, IProductFeed } from '.
 import { desc } from 'drizzle-orm';
 import { db } from './drizzle';
 import { StatusMessageTable } from './drizzle/schema.sql';
-import { Resource } from 'sst';
-import OpenAI from 'openai';
 import { z } from 'zod';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { openai } from './openai';
 
-const openai = new OpenAI({
-  apiKey: Resource.OpenaiApiKey.value,
-});
-
-export abstract class ProductFeed implements IProductFeed {
+export abstract class ProductFeed<T extends StatusMessage> implements IProductFeed {
   abstract readonly name: string;
   abstract readonly displayName: string;
   abstract readonly logo: string;
 
   abstract getServices(): Promise<IService[]>;
-  abstract getFeed(): Promise<StatusMessage[]>;
+  abstract getFeed(): Promise<T[]>;
 
   async toJson() {
     const services = await this.getServices();
@@ -39,6 +34,8 @@ export abstract class ProductFeed implements IProductFeed {
       .limit(1)
       .then((r) => r[0]);
 
+    const services = await this.getServices();
+    const feeds = services.map((service) => service.feedUrl).filter((f) => f !== undefined);
     const messages = await this.getFeed();
     if (messages.length === 0) return [];
 
@@ -54,7 +51,7 @@ export abstract class ProductFeed implements IProductFeed {
     return classifiedMessages;
   }
 
-  async classifyMessage(message: StatusMessage): Promise<ClassifiedMessage> {
+  async classifyMessage(message: T): Promise<ClassifiedMessage> {
     const services = await this.getServices();
     const availableServiceNames = services.map((service) => service.name);
 
