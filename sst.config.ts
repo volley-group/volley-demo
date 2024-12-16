@@ -30,7 +30,7 @@ export default $config({
 
     const vpc = isPermanentStage
       ? new sst.aws.Vpc(`VPC`, { bastion: true, nat: 'ec2' })
-      : sst.aws.Vpc.get(`VPC`, 'vpc-0d9ca494252bc8b37');
+      : sst.aws.Vpc.get(`VPC`, 'vpc-05460b61ab9283f14');
 
     const database =
       isPermanentStage || $dev
