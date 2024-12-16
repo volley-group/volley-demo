@@ -34,6 +34,10 @@ declare module "sst" {
       "type": "sst.aws.Postgres"
       "username": string
     }
+    "DatabasePush": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
     "OpenaiApiKey": {
       "type": "sst.sst.Secret"
       "value": string
