@@ -6,24 +6,10 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Check, Filter, Loader2Icon } from 'lucide-react';
-import { hc } from '@/lib/clients';
-import { useQuery, queryOptions } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { MessageFeed } from '@/components/messages/message-feed';
-
-const messagesQuery = queryOptions({
-  queryKey: ['messages'],
-  queryFn: () => hc['status-messages'].$get().then((r) => r.json()),
-});
-
-const productsQuery = queryOptions({
-  queryKey: ['products'],
-  queryFn: () => hc['products'].$get().then((r) => r.json()),
-});
-
-const configsQuery = queryOptions({
-  queryKey: ['configs'],
-  queryFn: () => hc['configs'].$get().then((r) => r.json()),
-});
+import { configsQuery, productsQuery } from '@/data/config';
+import { messagesQuery } from '@/data/feed';
 
 export const Route = createFileRoute('/_authed/feed')({
   component: FeedComponent,
@@ -38,7 +24,7 @@ export const Route = createFileRoute('/_authed/feed')({
 function FeedComponent() {
   const { isLoading: isLoadingMessages, data: messagesData } = useQuery(messagesQuery);
   const { isLoading: isLoadingProducts, data: productsData } = useQuery(productsQuery);
-  const { isLoading:isLoadingConfigs, data: configsData } = useQuery(configsQuery);
+  const { isLoading: isLoadingConfigs, data: configsData } = useQuery(configsQuery);
 
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
@@ -51,7 +37,7 @@ function FeedComponent() {
     if (configsData?.configs) {
       const products = new Set<string>();
       const services = new Set<string>();
-      
+
       configsData.configs.forEach((config) => {
         products.add(config.product);
         config.services.forEach((service) => services.add(`${config.product}:${service}`));
@@ -74,10 +60,8 @@ function FeedComponent() {
     return messages.filter((message) => {
       const matchesProduct = selectedProducts.size === 0 || selectedProducts.has(message.product);
       const matchesService =
-        selectedServices.size === 0 || 
-        message.affectedServices.some((service) => 
-          selectedServices.has(`${message.product}:${service}`)
-        );
+        selectedServices.size === 0 ||
+        message.affectedServices.some((service) => selectedServices.has(`${message.product}:${service}`));
       const matchesSearch =
         searchQuery === '' ||
         message.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -211,7 +195,9 @@ function FeedComponent() {
                           className="h-4 w-4 shrink-0"
                         />
                         <span className="flex-1 text-left">{service.displayName}</span>
-                        {selectedServices.has(`${service.product}:${service.name}`) && <Check className="h-4 w-4 shrink-0" />}
+                        {selectedServices.has(`${service.product}:${service.name}`) && (
+                          <Check className="h-4 w-4 shrink-0" />
+                        )}
                       </button>
                     ))}
                   </div>

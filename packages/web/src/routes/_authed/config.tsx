@@ -5,23 +5,13 @@ import { ChevronDown, ChevronUp, Loader2Icon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { AppNavbar } from '@/components/app-navbar';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
-import { hc, queryClient } from '@/lib/clients';
+import { useQuery } from '@tanstack/react-query';
+import { hc } from '@/lib/clients';
 import type { InferResponseType } from 'hono/client';
 import { Badge } from '@/components/ui/badge';
-
-const productsQuery = queryOptions({
-  queryKey: ['products'],
-  queryFn: () => hc['products'].$get().then((r) => r.json()),
-});
-
-const configsQuery = queryOptions({
-  queryKey: ['configs'],
-  queryFn: () => hc['configs'].$get().then((r) => r.json()),
-});
+import { configsQuery, productsQuery, useToggleServiceFeed } from '@/data/config';
 
 export const Route = createFileRoute('/_authed/config')({
   component: ConfigComponent,
@@ -36,58 +26,10 @@ function ConfigComponent() {
   const { isLoading: loadingProducts, data: productsData } = useQuery(productsQuery);
   const { isLoading: loadingConfigs, data: configsData } = useQuery(configsQuery);
 
-  const configMutation = useMutation({
-    mutationFn: (data: { product: string; service: string; action: 'add' | 'remove' }) =>
-      hc.configs.$post({ json: data }).then((r) => r.json()),
-    onMutate: (data) => {
-      const previousData = queryClient.getQueryData(configsQuery.queryKey);
-      const productConfig = previousData?.configs?.find((c) => c.product === data.product);
-      const productServices = productConfig?.services || [];
-      queryClient.setQueryData(configsQuery.queryKey, (oldData) => {
-        return productConfig
-          ? {
-              configs: oldData!.configs.map((config) => {
-                if (config.product === productConfig.product) {
-                  return {
-                    ...config,
-                    services:
-                      data.action === 'add'
-                        ? [...productServices, data.service]
-                        : productServices.filter((s) => s !== data.service),
-                  };
-                }
-                return config;
-              }),
-            }
-          : {
-              configs: [
-                {
-                  installationId: 0,
-                  product: data.product,
-                  services: [data.service],
-                },
-              ],
-            };
-      });
-      return { previousData };
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(configsQuery.queryKey, (oldData) => {
-        return {
-          ...oldData,
-          configs: oldData!.configs.map((c) => (c.product === data.config.product ? data.config : c)),
-        };
-      });
-    },
-    onError: (error, _, context) => {
-      console.error(error);
-      queryClient.setQueryData(configsQuery.queryKey, context?.previousData);
-    },
-  });
-
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [serviceSearchQueries, setServiceSearchQueries] = useState<Record<string, string>>({});
+  const toggleServiceFeed = useToggleServiceFeed();
 
   const productServiceIsEnabled = useCallback(
     (product: string, service: string) => {
@@ -118,7 +60,7 @@ function ConfigComponent() {
   };
 
   const toggleService = (productId: string, serviceId: string) => {
-    configMutation.mutate({
+    toggleServiceFeed.mutate({
       product: productId,
       service: serviceId,
       action: productServiceIsEnabled(productId, serviceId) ? 'remove' : 'add',

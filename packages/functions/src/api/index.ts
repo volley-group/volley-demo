@@ -75,6 +75,20 @@ const api = new Hono()
     const requestState = c.get('requestState');
     return c.json({ userId: requestState.status === 'signed-in' ? requestState.toAuth().userId : null }, 200);
   })
+  .get('/user', async (c) => {
+    const requestState = c.get('requestState');
+    if (requestState.status !== 'signed-in') {
+      return c.json(null);
+    }
+    const userId = requestState.toAuth().userId;
+    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+    const [installation] = await db
+      .select({ id: SlackInstallationTable.id })
+      .from(SlackInstallationTable)
+      .where(eq(SlackInstallationTable.teamId, user.teamId));
+
+    return c.json({ ...user, installationId: installation.id });
+  })
   .get('/installation-url', async (c) => {
     const params = new URLSearchParams({
       client_id: Resource.SlackClientId.value,
@@ -126,16 +140,6 @@ const api = new Hono()
     }
 
     return c.json({ to: '/feed' }, 200);
-  })
-  .get('/user', async (c) => {
-    const userId = c.get('auth').userId;
-    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
-    const [installation] = await db
-      .select({ id: SlackInstallationTable.id })
-      .from(SlackInstallationTable)
-      .where(eq(SlackInstallationTable.teamId, user.teamId));
-
-    return c.json({ ...user, installationId: installation.id });
   })
   .get('/status-messages', async (c) => {
     const { userId } = c.get('auth');

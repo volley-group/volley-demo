@@ -34,8 +34,8 @@ export abstract class ProductFeed<T extends StatusMessage> implements IProductFe
       .limit(1)
       .then((r) => r[0]);
 
-    const services = await this.getServices();
-    const feeds = services.map((service) => service.feedUrl).filter((f) => f !== undefined);
+    // const services = await this.getServices();
+    // const feeds = services.map((service) => service.feedUrl).filter((f) => f !== undefined);
     const messages = await this.getFeed();
     if (messages.length === 0) return [];
 
@@ -45,7 +45,7 @@ export abstract class ProductFeed<T extends StatusMessage> implements IProductFe
 
     const classifiedMessages = await Promise.all(latestMessages.map((message) => this.classifyMessage(message)));
     if (classifiedMessages.length > 0) {
-      await db.insert(StatusMessageTable).values(classifiedMessages);
+      await db.insert(StatusMessageTable).values(classifiedMessages).onConflictDoNothing();
     }
 
     return classifiedMessages;

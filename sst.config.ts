@@ -30,7 +30,7 @@ export default $config({
 
     const vpc = isPermanentStage
       ? new sst.aws.Vpc(`VPC`, { bastion: true, nat: 'ec2' })
-      : sst.aws.Vpc.get(`VPC`, 'vpc-05460b61ab9283f14');
+      : sst.aws.Vpc.get(`VPC`, 'vpc-0d0effea3ac94b2d7');
 
     const database =
       isPermanentStage || $dev
@@ -55,10 +55,6 @@ export default $config({
         production: 'app.usebraid.com',
         dev: `dev.app.usebraid.com`,
       }[$app.stage] || $app.stage + '.app.usebraid.com';
-
-    // export const zone = cloudflare.getZoneOutput({
-    //   name: 'mesa.dev',
-    // });
 
     const appDomain = {
       name: domain,
@@ -124,16 +120,15 @@ export default $config({
         link: [database],
         vpc,
       });
-
-      // new aws.lambda.Invocation(`DatabasePushInvocation`, {
-      //   functionName: databasePush.name,
-      //   input: JSON.stringify({
-      //     now: new Date().toISOString(),
-      //   }),
-      //   triggers: {
-      //     version: '1',
-      //   },
-      // });
+      new aws.lambda.Invocation(`DatabasePushInvocation`, {
+        functionName: databasePush.name,
+        input: JSON.stringify({
+          now: new Date().toISOString(),
+        }),
+        triggers: {
+          version: '1',
+        },
+      });
     }
 
     new sst.x.DevCommand('Studio', {

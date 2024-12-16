@@ -3,8 +3,8 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/sign-up/$')({
   component: RouteComponent,
-  beforeLoad: ({ context }) => {
-    if (context.userId) throw redirect({ to: '/feed' });
+  loader: ({ context }) => {
+    if (context.user?.id) throw redirect({ to: '/feed' });
   },
 });
 

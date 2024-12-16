@@ -6,5 +6,57 @@ import "sst"
 export {}
 declare module "sst" {
   export interface Resource {
+    "API": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "ClerkPublicKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ClerkSecretKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "Config": {
+      "DOMAIN": string
+      "LIVE": boolean
+      "PERMANENT_STAGE": boolean
+      "VITE_CLERK_PUBLISHABLE_KEY": string
+      "type": "sst.sst.Linkable"
+    }
+    "Database": {
+      "database": string
+      "host": string
+      "password": string
+      "port": number
+      "type": "sst.aws.Postgres"
+      "username": string
+    }
+    "OpenaiApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "Router": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
+    "SlackClientId": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "SlackClientSecret": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "VPC": {
+      "bastion": string
+      "type": "sst.aws.Vpc"
+    }
+    "Web": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
   }
 }
