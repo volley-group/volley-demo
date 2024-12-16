@@ -115,20 +115,20 @@ export default $config({
     });
 
     if ($app.stage === 'production') {
-      const databasePush = new sst.aws.Function(`DatabasePush`, {
-        handler: './packages/functions/src/database-push.handler',
-        link: [database],
-        vpc,
-      });
-      new aws.lambda.Invocation(`DatabasePushInvocation`, {
-        functionName: databasePush.name,
-        input: JSON.stringify({
-          now: new Date().toISOString(),
-        }),
-        triggers: {
-          version: '1',
-        },
-      });
+      // const databasePush = new sst.aws.Function(`DatabasePush`, {
+      //   handler: './packages/functions/src/database-push.handler',
+      //   link: [database],
+      //   vpc,
+      // });
+      // new aws.lambda.Invocation(`DatabasePushInvocation`, {
+      //   functionName: databasePush.name,
+      //   input: JSON.stringify({
+      //     now: new Date().toISOString(),
+      //   }),
+      //   triggers: {
+      //     version: '1',
+      //   },
+      // });
     }
 
     new sst.x.DevCommand('Studio', {
@@ -147,6 +147,13 @@ export default $config({
     });
 
     return {
+      db: {
+        host: database.host,
+        port: database.port,
+        username: database.username,
+        password: database.password,
+        database: database.database,
+      },
       web: webApp.url,
       api: api.url,
       router: router.url,
