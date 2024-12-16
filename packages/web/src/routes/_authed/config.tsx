@@ -12,24 +12,28 @@ import { hc } from '@/lib/clients';
 import type { InferResponseType } from 'hono/client';
 import { Badge } from '@/components/ui/badge';
 import { configsQuery, productsQuery, useToggleServiceFeed } from '@/data/config';
+import { userStore, workspaceAtom } from '@/data/user';
+import { useAtomValue } from 'jotai';
 
 export const Route = createFileRoute('/_authed/config')({
   component: ConfigComponent,
   loader: ({ context: { queryClient } }) => {
+    const workspace = userStore.get(workspaceAtom);
     queryClient.ensureQueryData(productsQuery);
-    queryClient.ensureQueryData(configsQuery);
+    queryClient.ensureQueryData(configsQuery(workspace!));
   },
   preload: true,
 });
 
 function ConfigComponent() {
+  const workspace = useAtomValue(workspaceAtom);
   const { isLoading: loadingProducts, data: productsData } = useQuery(productsQuery);
-  const { isLoading: loadingConfigs, data: configsData } = useQuery(configsQuery);
+  const { isLoading: loadingConfigs, data: configsData } = useQuery(configsQuery(workspace!));
 
   const [expandedProducts, setExpandedProducts] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [serviceSearchQueries, setServiceSearchQueries] = useState<Record<string, string>>({});
-  const toggleServiceFeed = useToggleServiceFeed();
+  const toggleServiceFeed = useToggleServiceFeed(workspace!);
 
   const productServiceIsEnabled = useCallback(
     (product: string, service: string) => {
@@ -46,7 +50,7 @@ function ConfigComponent() {
         ? product.services.filter((service) => productServiceIsEnabled(product.name, service.name)).length
         : 0;
     },
-    [productsData]
+    [productsData, productServiceIsEnabled]
   );
 
   const toggleProduct = (productId: string) => {

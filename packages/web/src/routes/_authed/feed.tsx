@@ -10,21 +10,25 @@ import { useQuery } from '@tanstack/react-query';
 import { MessageFeed } from '@/components/messages/message-feed';
 import { configsQuery, productsQuery } from '@/data/config';
 import { messagesQuery } from '@/data/feed';
+import { useAtomValue } from 'jotai';
+import { userStore, workspaceAtom } from '@/data/user';
 
 export const Route = createFileRoute('/_authed/feed')({
   component: FeedComponent,
   loader: ({ context: { queryClient } }) => {
-    queryClient.ensureQueryData(messagesQuery);
+    const workspace = userStore.get(workspaceAtom);
+    queryClient.ensureQueryData(messagesQuery(workspace!));
     queryClient.ensureQueryData(productsQuery);
-    queryClient.ensureQueryData(configsQuery);
+    queryClient.ensureQueryData(configsQuery(workspace!));
   },
   preload: true,
 });
 
 function FeedComponent() {
-  const { isLoading: isLoadingMessages, data: messagesData } = useQuery(messagesQuery);
+  const workspace = useAtomValue(workspaceAtom);
+  const { isLoading: isLoadingMessages, data: messagesData } = useQuery(messagesQuery(workspace!));
   const { isLoading: isLoadingProducts, data: productsData } = useQuery(productsQuery);
-  const { isLoading: isLoadingConfigs, data: configsData } = useQuery(configsQuery);
+  const { isLoading: isLoadingConfigs, data: configsData } = useQuery(configsQuery(workspace!));
 
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());

@@ -8,7 +8,13 @@ import { z } from 'zod';
 import { scopes, slack, userScopes } from '../slack';
 import { Resource } from 'sst';
 import { db } from '../drizzle';
-import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } from '../drizzle/schema.sql';
+import {
+  ConfigTable,
+  SlackInstallationTable,
+  StatusMessageTable,
+  UserInstallations,
+  UserTable,
+} from '../drizzle/schema.sql';
 import { authenticatedMiddleware, clerkMiddleware } from './middleware';
 import { and, eq, getTableColumns, inArray } from 'drizzle-orm';
 import feeds from '../feeds';
@@ -29,30 +35,52 @@ const api = new Hono()
         client_secret: Resource.SlackClientSecret.value,
         redirect_uri: `https://${Resource.Config.DOMAIN}/api/auth/slack/oauth_redirect`,
       });
+      console.log('response', response);
+      const userInfo = await slack.openid.connect.userInfo({
+        token: response.authed_user!.access_token!,
+      });
+      console.log('userInfo', userInfo);
+      const user = await db.query.UserTable.findFirst({
+        where: eq(UserTable.email, userInfo.email!),
+      });
 
-      const [installation] = await db
-        .insert(SlackInstallationTable)
-        .values({
-          teamId: response.team!.id!,
-          teamName: response.team!.name!,
-          botUserId: response.bot_user_id!,
-          botToken: response.access_token!,
-          botScopes: response.scope!,
-          incomingWebhook: {
-            channel: response.incoming_webhook!.channel!,
-            channelId: response.incoming_webhook!.channel_id!,
-            configurationUrl: response.incoming_webhook!.configuration_url!,
-            url: response.incoming_webhook!.url!,
-          },
-        })
-        .onConflictDoUpdate({
-          // We need to do an update here to make returning() actually return something
-          target: [SlackInstallationTable.teamId],
-          set: {
+      if (!user) {
+        console.log('User not found, redirecting to sign-in');
+        const redirectUrl = Resource.Config.PERMANENT_STAGE ? '/sign-in' : 'http://localhost:5173/sign-in';
+        return c.redirect(redirectUrl);
+      }
+
+      const installation = await db.transaction(async (tx) => {
+        const [installation] = await tx
+          .insert(SlackInstallationTable)
+          .values({
+            teamId: response.team!.id!,
             teamName: response.team!.name!,
-          },
-        })
-        .returning();
+            botUserId: response.bot_user_id!,
+            botToken: response.access_token!,
+            botScopes: response.scope!,
+            incomingWebhook: {
+              channel: response.incoming_webhook!.channel!,
+              channelId: response.incoming_webhook!.channel_id!,
+              configurationUrl: response.incoming_webhook!.configuration_url!,
+              url: response.incoming_webhook!.url!,
+            },
+          })
+          .onConflictDoUpdate({
+            // We need to do an update here to make returning() actually return something
+            target: [SlackInstallationTable.teamId],
+            set: {
+              teamName: response.team!.name!,
+            },
+          })
+          .returning();
+
+        await tx.insert(UserInstallations).values({
+          userId: user.id,
+          installationId: installation.id,
+        });
+        return installation;
+      });
 
       console.log('Saved new installation', installation.id);
       const joinResponse = await slack.conversations.join({
@@ -71,23 +99,29 @@ const api = new Hono()
     const products = await Promise.all(feeds.map((f) => f.toJson()));
     return c.json({ products }, 200);
   })
-  .get('/userId', async (c) => {
-    const requestState = c.get('requestState');
-    return c.json({ userId: requestState.status === 'signed-in' ? requestState.toAuth().userId : null }, 200);
-  })
   .get('/user', async (c) => {
     const requestState = c.get('requestState');
     if (requestState.status !== 'signed-in') {
       return c.json(null);
     }
     const userId = requestState.toAuth().userId;
-    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
-    const [installation] = await db
-      .select({ id: SlackInstallationTable.id })
-      .from(SlackInstallationTable)
-      .where(eq(SlackInstallationTable.teamId, user.teamId));
-
-    return c.json({ ...user, installationId: installation.id });
+    const user = await db.query.UserTable.findFirst({
+      where: eq(UserTable.id, userId),
+      with: {
+        installations: {
+          with: {
+            installation: {
+              columns: {
+                id: true,
+                teamId: true,
+                teamName: true,
+              },
+            },
+          },
+        },
+      },
+    }).then((user) => ({ ...user!, installations: user?.installations.map((i) => i.installation) }));
+    return c.json(user);
   })
   .get('/installation-url', async (c) => {
     const params = new URLSearchParams({
@@ -104,53 +138,73 @@ const api = new Hono()
     const { userId } = c.get('auth');
     const clerk = c.get('clerk');
     const accessTokens = (await clerk.users.getUserOauthAccessToken(userId!, 'oauth_slack')).data;
-    const token = accessTokens[0].token || '';
-    const userInfo = await slack.openid.connect.userInfo({
-      token,
-    });
-    const [savedUser] = await db
+    const slackTokens = accessTokens.filter((t) => t.provider === 'oauth_slack');
+    const tokenInfos = await Promise.all(
+      slackTokens.map(async (t) => {
+        const tokenInfo = await slack.openid.connect.userInfo({
+          token: t.token,
+        });
+        return {
+          teamId: tokenInfo['https://slack.com/team_id']!,
+          userId: tokenInfo['https://slack.com/user_id']!,
+          email: tokenInfo.email!,
+          name: tokenInfo.name!,
+          picture: tokenInfo.picture,
+        };
+      })
+    );
+
+    await db
       .insert(UserTable)
       .values({
         id: userId!,
-        externalId: userInfo['https://slack.com/user_id']!,
-        email: userInfo.email!,
-        name: userInfo.name!,
-        avatarUrl: userInfo.picture,
-        teamId: userInfo['https://slack.com/team_id']!,
+        externalId: tokenInfos[0].userId,
+        email: tokenInfos[0].email!,
+        name: tokenInfos[0].name!,
+        avatarUrl: tokenInfos[0].picture,
       })
-      .onConflictDoUpdate({
-        // We need to do an update here to make returning() actually return something. Sad but true
-        target: [UserTable.id],
-        set: {
-          teamId: userInfo['https://slack.com/team_id']!,
-        },
-      })
-      .returning();
+      .onConflictDoNothing();
 
-    const [existingInstallation] = await db
-      .select({
-        id: SlackInstallationTable.id,
-      })
+    const installations = await db
+      .select()
       .from(SlackInstallationTable)
-      .where(eq(SlackInstallationTable.teamId, savedUser.teamId));
-
-    if (!existingInstallation) {
-      console.log('No installation found, redirecting to install');
+      .where(
+        inArray(
+          SlackInstallationTable.teamId,
+          tokenInfos.map((t) => t.teamId)
+        )
+      );
+    if (installations.length !== tokenInfos.length) {
+      console.log('Signed in with new installation, redirecting to install');
       return c.json({ to: '/slack/install' }, 200);
     }
+    // const existingInstallations = tokenInfos.filter((t) => installations.some((i) => i.teamId === t.teamId));
+    // await db
+    //   .insert(UserInstallations)
+    //   .values(
+    //     existingInstallations.map((t) => ({
+    //       userId: userId,
+    //       installationId: installations.find((i) => i.teamId === t.teamId)!.id!,
+    //     }))
+    //   )
+    //   .onConflictDoNothing();
 
     return c.json({ to: '/feed' }, 200);
   })
-  .get('/status-messages', async (c) => {
+  .get('/status-messages', zValidator('query', z.object({ installationId: z.string() })), async (c) => {
     const { userId } = c.get('auth');
-    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
-    const team = await db.query.SlackInstallationTable.findFirst({
-      where: eq(SlackInstallationTable.teamId, user.teamId),
-      columns: { id: true },
+    const { installationId } = c.req.valid('query');
+    const installation = await db.query.UserInstallations.findFirst({
+      where: and(eq(UserInstallations.userId, userId), eq(UserInstallations.installationId, Number(installationId))),
       with: {
-        configs: true,
+        installation: {
+          with: {
+            configs: true,
+          },
+        },
       },
-    });
+    }).then((u) => u?.installation);
+
     const messages = await db
       .select({
         ...getTableColumns(StatusMessageTable),
@@ -159,33 +213,54 @@ const api = new Hono()
       .where(
         inArray(
           StatusMessageTable.product,
-          team!.configs.map((c) => c.product)
+          installation!.configs.map((c) => c.product)
         )
       );
 
-    return c.json({ teamId: user.teamId, messages }, 200);
+    return c.json({ teamId: installation!.teamId, messages }, 200);
   })
-  .get('/configs', async (c) => {
+  .get('/configs', zValidator('query', z.object({ installationId: z.string() })), async (c) => {
     const { userId } = c.get('auth');
-    const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
+    const { installationId } = c.req.valid('query');
+    const installations = await db.query.UserInstallations.findMany({
+      where: and(eq(UserInstallations.userId, userId), eq(UserInstallations.installationId, Number(installationId))),
+      with: {
+        installation: true,
+      },
+    }).then((u) => u.map((i) => i.installation));
     const teamConfigs = await db
       .select({ ...getTableColumns(ConfigTable) })
       .from(ConfigTable)
       .innerJoin(SlackInstallationTable, eq(ConfigTable.installationId, SlackInstallationTable.id))
-      .where(eq(SlackInstallationTable.teamId, user.teamId));
+      .where(
+        inArray(
+          SlackInstallationTable.teamId,
+          installations.map((i) => i.teamId)
+        )
+      );
     return c.json({ configs: teamConfigs }, 200);
   })
   .post(
     '/configs',
-    zValidator('json', z.object({ product: z.string(), service: z.string(), action: z.enum(['add', 'remove']) })),
+    zValidator(
+      'json',
+      z.object({
+        product: z.string(),
+        service: z.string(),
+        action: z.enum(['add', 'remove']),
+        installationId: z.number(),
+      })
+    ),
     async (c) => {
-      const { product, service, action } = c.req.valid('json');
+      const { product, service, action, installationId } = c.req.valid('json');
       const { userId } = c.get('auth');
-      const [user] = await db.select().from(UserTable).where(eq(UserTable.id, userId));
-      const [installation] = await db
-        .select({ id: SlackInstallationTable.id })
-        .from(SlackInstallationTable)
-        .where(eq(SlackInstallationTable.teamId, user.teamId));
+
+      const installation = await db.query.UserInstallations.findFirst({
+        where: and(eq(UserInstallations.userId, userId), eq(UserInstallations.installationId, installationId)),
+        with: {
+          installation: true,
+        },
+      }).then((u) => u!.installation);
 
       const updatedConfig = await db.transaction(async (tx) => {
         const [config] = await tx

@@ -6,20 +6,21 @@ export const productsQuery = queryOptions({
   queryFn: () => hc['products'].$get().then((r) => r.json()),
 });
 
-export const configsQuery = queryOptions({
-  queryKey: ['configs'],
-  queryFn: () => hc['configs'].$get().then((r) => r.json()),
-});
+export const configsQuery = (installationId: number) =>
+  queryOptions({
+    queryKey: ['configs', installationId],
+    queryFn: () => hc['configs'].$get({ query: { installationId: installationId.toString() } }).then((r) => r.json()),
+  });
 
-export const useToggleServiceFeed = () => {
+export const useToggleServiceFeed = (installationId: number) => {
   return useMutation({
     mutationFn: (data: { product: string; service: string; action: 'add' | 'remove' }) =>
-      hc.configs.$post({ json: data }).then((r) => r.json()),
+      hc['configs'].$post({ json: { ...data, installationId } }).then((r) => r.json()),
     onMutate: (data) => {
-      const previousData = queryClient.getQueryData(configsQuery.queryKey);
+      const previousData = queryClient.getQueryData(configsQuery(installationId).queryKey);
       const productConfig = previousData?.configs?.find((c) => c.product === data.product);
       const productServices = productConfig?.services || [];
-      queryClient.setQueryData(configsQuery.queryKey, (oldData) => {
+      queryClient.setQueryData(configsQuery(installationId).queryKey, (oldData) => {
         return productConfig
           ? {
               configs: oldData!.configs.map((config) => {
@@ -48,7 +49,7 @@ export const useToggleServiceFeed = () => {
       return { previousData };
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(configsQuery.queryKey, (oldData) => {
+      queryClient.setQueryData(configsQuery(installationId).queryKey, (oldData) => {
         return {
           ...oldData,
           configs: oldData!.configs.map((c) => (c.product === data.config.product ? data.config : c)),
@@ -57,7 +58,7 @@ export const useToggleServiceFeed = () => {
     },
     onError: (error, _, context) => {
       console.error(error);
-      queryClient.setQueryData(configsQuery.queryKey, context?.previousData);
+      queryClient.setQueryData(configsQuery(installationId).queryKey, context?.previousData);
     },
   });
 };

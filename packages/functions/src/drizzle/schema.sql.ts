@@ -9,7 +9,6 @@ export const UserTable = pgTable(
     email: text('email').notNull(),
     name: text('name').notNull(),
     avatarUrl: text('avatar_url'),
-    teamId: text('team_id').notNull(),
   },
   (t) => [uniqueIndex('emailUniqueIndex').on(sql`lower(${t.email})`)]
 );
@@ -31,11 +30,24 @@ export const SlackInstallationTable = pgTable('slack_installations', {
     .notNull(),
 });
 
+export const UserInstallations = pgTable(
+  'user_installations',
+  {
+    userId: text('user_id')
+      .references(() => UserTable.id, { onDelete: 'cascade' })
+      .notNull(),
+    installationId: integer('installation_id')
+      .references(() => SlackInstallationTable.id, { onDelete: 'cascade' })
+      .notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.installationId] })]
+);
+
 export const ConfigTable = pgTable(
   'config',
   {
     installationId: integer('installation_id')
-      .references(() => SlackInstallationTable.id)
+      .references(() => SlackInstallationTable.id, { onDelete: 'cascade' })
       .notNull(),
     product: text('product').notNull(),
     services: jsonb('services').$type<string[]>().notNull().default([]),
@@ -43,8 +55,23 @@ export const ConfigTable = pgTable(
   (table) => [primaryKey({ columns: [table.installationId, table.product] })]
 );
 
+export const UserRelations = relations(UserTable, ({ many }) => ({
+  installations: many(UserInstallations),
+}));
+
 export const InstallationRelations = relations(SlackInstallationTable, ({ many }) => ({
   configs: many(ConfigTable),
+}));
+
+export const UserInstallationsRelations = relations(UserInstallations, ({ one }) => ({
+  user: one(UserTable, {
+    fields: [UserInstallations.userId],
+    references: [UserTable.id],
+  }),
+  installation: one(SlackInstallationTable, {
+    fields: [UserInstallations.installationId],
+    references: [SlackInstallationTable.id],
+  }),
 }));
 
 export const ConfigTableRelations = relations(ConfigTable, ({ one }) => ({

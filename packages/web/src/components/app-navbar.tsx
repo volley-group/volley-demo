@@ -6,21 +6,22 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { LogOut } from 'lucide-react';
-import { queryOptions, useQuery } from '@tanstack/react-query';
-import { hc } from '@/lib/clients';
+import { CheckIcon, LogOut } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from '@clerk/clerk-react';
-
-const userQuery = queryOptions({
-  queryKey: ['user'],
-  queryFn: () => hc['user'].$get().then((r) => r.json()),
-});
+import { useAtom } from 'jotai';
+import { userQuery, workspaceAtom } from '@/data/user';
+import { useEffect } from 'react';
+import { queryClient } from '@/lib/clients';
+import { messagesQuery } from '@/data/feed';
+import { configsQuery } from '@/data/config';
 
 const getInitials = (name: string): string => {
   // Handle empty or undefined name
@@ -44,7 +45,21 @@ const getInitials = (name: string): string => {
 };
 
 export function AppNavbar() {
+  const [workspace, setWorkspace] = useAtom(workspaceAtom);
   const { isLoading, data: user } = useQuery(userQuery);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!workspace) setWorkspace(user!.installations![0].id);
+  }, [isLoading]);
+
+  const switchWorkspace = (id: number) => {
+    if (id === workspace) return;
+    setWorkspace(id);
+    queryClient.invalidateQueries({ queryKey: messagesQuery(workspace!).queryKey });
+    queryClient.invalidateQueries({ queryKey: configsQuery(workspace!).queryKey });
+  };
+
   const navigate = useNavigate();
   const { signOut } = useAuth();
   return (
@@ -110,9 +125,26 @@ export function AppNavbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    {user!.installations!.map((installation) => (
+                      <DropdownMenuItem
+                        key={installation.id}
+                        onClick={() => switchWorkspace(installation.id)}
+                        className="hover:cursor-pointer"
+                      >
+                        {installation.id === workspace ? <CheckIcon className="mr-2 h-4 w-4" /> : null}
+                        {installation.teamName}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-red-600 hover:cursor-pointer"
-                    onClick={() => signOut({ redirectUrl: '/sign-in' }).then(() => navigate({ to: '/sign-in/$' }))}
+                    onClick={() =>
+                      signOut({ redirectUrl: '/sign-in' })
+                        .then(() => queryClient.invalidateQueries({ queryKey: userQuery.queryKey }))
+                        .then(() => navigate({ to: '/sign-in/$' }))
+                    }
                   >
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign out</span>
