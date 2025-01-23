@@ -6,7 +6,6 @@ import { eq } from 'drizzle-orm';
 import { ConfigTable, SlackInstallationTable, StatusMessageTable, UserTable } from '../drizzle/schema.sql';
 import { db } from '../drizzle';
 import { scopes, userScopes } from '../slack';
-import { slack } from '../slack';
 import { getTableColumns } from 'drizzle-orm';
 import { z } from 'zod';
 import feeds from '../feeds';

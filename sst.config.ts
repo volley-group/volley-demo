@@ -32,7 +32,7 @@ export default $config({
 
     const database =
       isPermanentStage || $dev
-        ? new sst.aws.Postgres(`Database`, {
+        ? new sst.aws.Postgres.v1(`Database`, {
             vpc,
             proxy: true,
             dev: {
@@ -43,7 +43,7 @@ export default $config({
               password: 'postgres',
             },
           })
-        : sst.aws.Postgres.get(`Database`, {
+        : sst.aws.Postgres.v1.get(`Database`, {
             id: `DevDatabaseInstance`,
             proxyId: `DevDatabaseProxy`,
           });
