@@ -12,8 +12,8 @@ export default $config({
           profile: process.env['GITHUB_ACTIONS']
             ? undefined
             : input?.stage === 'production'
-              ? 'mesa-production'
-              : 'mesa-development',
+              ? 'volley-prod' 
+              : 'volley-dev',
         },
         cloudflare: true,
       },
@@ -22,8 +22,6 @@ export default $config({
   async run() {
     const isPermanentStage = $app.stage === 'production' || $app.stage === 'development';
 
-    const slackClientId = new sst.Secret(`SlackClientId`);
-    const slackClientSecret = new sst.Secret(`SlackClientSecret`);
     const clerkSecretKey = new sst.Secret(`ClerkSecretKey`);
     const clerkPublicKey = new sst.Secret(`ClerkPublicKey`);
     const openaiApiKey = new sst.Secret(`OpenaiApiKey`);
@@ -73,7 +71,7 @@ export default $config({
 
     const api = new sst.aws.Function(`API`, {
       handler: './packages/functions/src/api/index.handler',
-      link: [database, config, openaiApiKey, clerkSecretKey, slackClientId, slackClientSecret],
+      link: [database, config, openaiApiKey, clerkSecretKey],
       url: {
         cors: {
           allowOrigins: ['*'],
@@ -100,7 +98,7 @@ export default $config({
     new sst.aws.Cron('StatusRunner', {
       job: {
         handler: 'packages/functions/src/run.handler',
-        link: [database, openaiApiKey, slackClientId, slackClientSecret],
+        link: [database, openaiApiKey],
         vpc,
       },
       schedule: 'rate(1 minute)',

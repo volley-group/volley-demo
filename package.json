@@ -4,7 +4,7 @@
   "sideEffects": false,
   "private": true,
   "scripts": {
-    "sso": "aws sso login --sso-session=mesa",
+    "sso": "aws sso login --sso-session=volley",
     "dev": "sst dev",
     "deploy": "sst deploy",
     "deploy:production": "NODE_ENV=production npx env-cmd -f .env.production sst deploy --stage production",
